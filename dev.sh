@@ -6,8 +6,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 cd "$SCRIPT_DIR"
 
-# Make/move into the `build/` folder
+# Create the `build/` folder if it doesn't yet exist
 mkdir -p build
+
+# Move into the `build/` folder
 cd build
 
 # Install the Conan dependencies

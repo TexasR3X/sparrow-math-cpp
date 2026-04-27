@@ -38,7 +38,7 @@ elif [[ "$1" == "build-cmake" ]]; then
     build_executable
 elif [[ -z "$1" || "$1" == "build-cpp" ]]; then
     build_executable
-else
+elif [[ "$1" != "run" ]]; then
     echo "Error: Unknown arguement for dev.sh: $1"
     exit 1
 fi

@@ -5,15 +5,15 @@ set -e
 
 # Declare helper functions
 install_conan_deps() {
-    # Install the Conan dependencies
+    echo "~~~~~~~~~~ Installing Conan dependencies ~~~~~~~~~~"
     conan install .. --build=missing
 }
 config_cmake_and_conan() {
-    # Configure CMake the Conan toolchain
+    echo "~~~~~~~~~~ Configuring CMake and Conan toolchain ~~~~~~~~~~"
     cmake .. -DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 }
 build_executable() {
-    # Build the unit test executable
+    echo "~~~~~~~~~~ Building the unit test executable ~~~~~~~~~~"
     cmake --build .
 }
 
@@ -47,4 +47,5 @@ fi
 cd tests
 
 # Run the unit test executable
+echo "~~~~~~~~~~ Running tests ~~~~~~~~~~"
 ./test_sparrow_math

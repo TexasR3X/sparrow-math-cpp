@@ -9,5 +9,9 @@ target_link_libraries(test_sparrow_math
     GTest::gtest_main
 )
 
+target_include_directories(test_sparrow_math
+    PRIVATE ${PROJECT_SOURCE_DIR}/src
+)
+
 include(GoogleTest)
 gtest_discover_tests(test_sparrow_math)

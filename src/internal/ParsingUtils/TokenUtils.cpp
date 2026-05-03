@@ -2,7 +2,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
-#include "TokenType.hpp"
 #include "TokenUtils.hpp"
 
 #define DEBUG_LOG(code) std::cout << #code << ": " << (code) << std::endl

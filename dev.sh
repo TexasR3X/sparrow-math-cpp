@@ -16,6 +16,18 @@ build_executable() {
     echo "~~~~~~~~~~ Building the unit test executable ~~~~~~~~~~"
     cmake --build .
 }
+run_executable() {
+    echo "~~~~~~~~~~ Running tests ~~~~~~~~~~"
+    cd tests
+    if [[ ! -f test_sparrow_math ]]; then
+        echo $'ERROR: The executable file `./build/tests/test_sparrow_math` does not exist'
+    elif [[ ! -x test_sparrow_math ]]; then
+        echo $'ERROR: You either don\'t have permission to run the executable file, or its not an executable'
+        echo $'ERROR: The file is named `./build/tests/test_sparrow_math`'
+    else
+        ./test_sparrow_math
+    fi
+}
 
 # Force this script to run in the right directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,21 +43,21 @@ cd build
 # Compile/configure the things that need to be compiled/configured
 if [[ "$1" == "build-conan" ]]; then
     install_conan_deps
-    config_cmake_and_conan
-    build_executable
 elif [[ "$1" == "build-cmake" ]]; then
     config_cmake_and_conan
+elif [[ "$1" == "build-cpp" ]]; then
     build_executable
-elif [[ -z "$1" || "$1" == "build-cpp" ]]; then
+elif [[ "$1" == "build" ]]; then
+    install_conan_deps
+    config_cmake_and_conan
     build_executable
-elif [[ "$1" != "run" ]]; then
-    echo "Error: Unknown arguement for dev.sh: $1"
+elif [[ "$1" == "run" ]]; then
+    run_executable
+elif [[ -z "$1" ]]; then
+    build_executable
+    run_executable
+else
+    echo $'ERROR: Unknown option for `dev.sh`'
+    echo $'ERROR: See `README.md` for command options'
     exit 1
 fi
-
-# Move to the `./build/tests/` directory
-cd tests
-
-# Run the unit test executable
-echo "~~~~~~~~~~ Running tests ~~~~~~~~~~"
-./test_sparrow_math

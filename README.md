@@ -1,8 +1,16 @@
 # Sparrow Math &mdash; C++ Library
 
 ## Development Tool:
-The `dev.sh` file can be used to build, rebuild, and run the project's unit tests. It can be run in the following ways:
-1. Run `./dev.sh run` to run the unit tests. 
-2. Run `./dev.sh build-cpp` (or `./dev.sh`) to compile the CPP and HPP files, and to run the unit tests.
-3. Run `./dev.sh build-cmake` to compile the CMake, CPP, and HPP files, and to run the unit tests.
-4. Run `./dev.sh build-conan` to install the Conan libraries and compile the CMake, CPP, and HPP files, and to run the unit tests.
+The `dev.sh` file can be used to build, rebuild, and run the project's unit tests. Its run with the syntax:
+```bash
+./dev.sh <option>
+```
+Each command option is given in the table below:
+| Command Option | Description                                         |
+| -------------- | --------------------------------------------------- |
+| build-conan    | Installs the Conan dependencies.                    |
+| build-cmake    | Configures the CMake and Conan toolchain.           |
+| build-cpp      | Compiles the C++ into a unit test executable.       |
+| build          | Same as using all of the other build options.       |
+| run            | Runs the unit test executable.                      |
+| (Default)      | Same as running both the `build` and `run` options. |

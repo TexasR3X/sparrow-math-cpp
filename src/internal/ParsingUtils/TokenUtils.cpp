@@ -1,179 +1,346 @@
 #include <format>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include "TokenUtils.hpp"
 
-#define DEBUG_LOG(code) std::cout << #code << ": " << (code) << std::endl
+#define DEBUG_LOG(code) std::cout << "[" << __LINE__ << "] " << #code << ": " << (code) << std::endl
 
 namespace sparrow_math::internal::ParsingUtils {
     std::string Token::ToString() const {
+        std::string type;
+
         switch (Type) {
             case TokenType::Number:
-                return "Number(" + Value + ")";
+                type = "Number";
+                break;
             case TokenType::Symbol:
-                return "Symbol(" + Value + ")";
+                type = "Symbol";
+                break;
             case TokenType::Plus:
-                return "Plus";
+                type = "Plus";
+                break;
             case TokenType::Minus:
-                return "Minus";
+                type = "Minus";
+                break;
             case TokenType::Star:
-                return "Star";
+                type = "Star";
+                break;
             case TokenType::Underscore:
-                return "Underscore";
+                type = "Underscore";
+                break;
             case TokenType::UpArrow:
-                return "UpArrow";
+                type = "UpArrow";
+                break;
+            case TokenType::Ampersand:
+                type = "Ampersand";
+                break;
+            case TokenType::EqualSign:
+                type = "EqualSign";
+                break;
+            case TokenType::DoubleBackslash:
+                type = "DoubleBackslash";
+                break;
             case TokenType::LeftParenthesis:
-                return "LeftParenthesis";
+                type = "LeftParenthesis";
+                break;
             case TokenType::RightParenthesis:
-                return "RightParenthesis";
+                type = "RightParenthesis";
+                break;
             case TokenType::LeftSquareBracket:
-                return "LeftSquareBracket";
+                type = "LeftSquareBracket";
+                break;
             case TokenType::RightSquareBracket:
-                return "RightSquareBracket";
+                type = "RightSquareBracket";
+                break;
             case TokenType::LeftCurlyBracket:
-                return "LeftCurlyBracket";
+                type = "LeftCurlyBracket";
+                break;
             case TokenType::RightCurlyBracket:
-                return "RightCurlyBracket";
+                type = "RightCurlyBracket";
+                break;
+            case TokenType::EscapedLeftCurlyBracket:
+                type = "EscapedLeftCurlyBracket";
+                break;
+            case TokenType::EscapedRightCurlyBracket:
+                type = "EscapedRightCurlyBracket";
+                break;
+            case TokenType::LeftAngleBracket:
+                type = "LeftAngleBracket";
+                break;
+            case TokenType::RightAngleBracket:
+                type = "RightAngleBracket";
+                break;
             default:
                 throw std::runtime_error("Unknown `TokenType` option");
         }
+
+        return type + "(" + Value + ")";
     }
 
-    char StringIterator::Peak() const {
-        // Get the current character from the string
-        return _str.at(_currentIndex);
+    TokenBuilder::AppendingResult TokenBuilder::AppendToToken(const char& ch) {
+        if (_tokenMustBeNum) {
+            if (std::isdigit(ch)) {
+                _tokenContents += ch;
+                return AppendingResult::StillWorking;
+            }
+            else if (ch == '.') {
+                // See if a decimal point has already been found
+                if (_hasDotBeenFound) {
+                    ErrorMessage = "A number cannot have two decimal points";
+                    return AppendingResult::ErrorFound;
+                }
+                else {
+                    _hasDotBeenFound = true;
+                    _tokenContents += ch;
+                    return AppendingResult::StillWorking;
+                }
+            }
+            else {
+                return AppendingResult::ReadyToFinishWithoutLastChar;
+            }
+        }
+        else if (_tokenMustBeSymbol) {
+            if (std::isalnum(ch)) {
+                _tokenContents += ch;
+                return AppendingResult::StillWorking;
+            }
+            else {
+                return AppendingResult::ReadyToFinishWithoutLastChar;
+            }
+        }
+        else if (_hasBackslashBeenFound) {
+            if (std::isalpha(ch)) {
+                _tokenMustBeSymbol = true;
+                _tokenContents += ch;
+                return AppendingResult::StillWorking;
+            }
+            else if (std::isdigit(ch)) {
+                ErrorMessage = "A LaTeX command cannot start with a number";
+                return AppendingResult::ErrorFound;
+            }
+            else {
+                switch (ch) {
+                    case ' ':
+                    case ',':
+                    case ':':
+                    case ';':
+                    case '!':
+                    case '\n':
+                        ClearBuilder();
+                        return AppendingResult::StillWorking;
+                    case '\\':
+                    case '{':
+                    case '}':
+                        _tokenMustBeOperator = true;
+                        _tokenContents += ch;
+
+                        return AppendingResult::ReadyToFinishWithLastChar;
+                    default:
+                        ErrorMessage = std::format("Invalid character ({}) infront of \\", ch);
+                        return AppendingResult::ErrorFound;
+                }
+            }
+        }
+        else {
+            if (ch == ' ' || ch == '\n') {
+                if (_tokenContents.empty()) {
+                    // Don't append the last space character to the working token
+                    return AppendingResult::StillWorking;
+                }
+                else {
+                    // Don't append the last space character, but still return `ReadyToFinishWithLastChar` so the space is skipped
+                    return AppendingResult::ReadyToFinishWithLastChar;
+                }
+            }
+            else if (ch == '\\') {
+                _hasBackslashBeenFound = true;
+                _tokenContents += ch;
+                return AppendingResult::StillWorking;
+            }
+            else if (ch == '.') {
+                _tokenMustBeNum = true;
+                _hasDotBeenFound = true;
+                _tokenContents += ch;
+                return AppendingResult::StillWorking;
+            }
+            else if (std::isalpha(ch)) {
+                _tokenMustBeSymbol = true;
+                _tokenContents += ch;
+                return AppendingResult::ReadyToFinishWithLastChar;
+            }
+            else if (std::isdigit(ch)) {
+                _tokenMustBeNum = true;
+                _tokenContents += ch;
+                return AppendingResult::StillWorking;
+            }
+            else {
+                switch (ch) {
+                    case '+':
+                    case '-':
+                    case '*':
+                    case '/':
+                    case '_':
+                    case '^':
+                    case '&':
+                    case '=':
+                    case '(':
+                    case ')':
+                    case '[':
+                    case ']':
+                    case '{':
+                    case '}':
+                    case '<':
+                    case '>':
+                        _tokenMustBeOperator = true;
+                        _tokenContents += ch;
+                        return AppendingResult::ReadyToFinishWithLastChar;
+                    default:
+                        ErrorMessage = std::format("Invalid character ({}) in LaTeX", ch);
+                        return AppendingResult::ErrorFound;
+                }
+            }
+        }
     }
 
-    char StringIterator::Advance() {
-        // Get the current character from the string
-        char currentChar = _str.at(_currentIndex);
+    Token TokenBuilder::FinishToken() {
+        Token token(TokenType::Unknown);
 
-        // Increment the current index if the iterator isn't finished
-        if (!IsFinished()) {
-            _currentIndex++;
+        if (_tokenMustBeSymbol) {
+            token.Type = TokenType::Symbol;
+            token.Value = _tokenContents;
+        }
+        else if (_tokenMustBeNum) {
+            token.Type = TokenType::Number;
+            token.Value = _tokenContents;
+        }
+        else if (_tokenMustBeOperator) {
+            if (_tokenContents == "+") {
+                token.Type = TokenType::Plus;
+            }
+            else if (_tokenContents == "-") {
+                token.Type = TokenType::Minus;
+            }
+            else if (_tokenContents == "*") {
+                token.Type = TokenType::Star;
+            }
+            else if (_tokenContents == "/") {
+                token.Type = TokenType::ForwardSlash;
+            }
+            else if (_tokenContents == "_") {
+                token.Type = TokenType::Underscore;
+            }
+            else if (_tokenContents == "^") {
+                token.Type = TokenType::UpArrow;
+            }
+            else if (_tokenContents == "&") {
+                token.Type = TokenType::Ampersand;
+            }
+            else if (_tokenContents == "=") {
+                token.Type = TokenType::EqualSign;
+            }
+            else if (_tokenContents == "\\\\") {
+                token.Type = TokenType::DoubleBackslash;
+            }
+            else if (_tokenContents == "(") {
+                token.Type = TokenType::LeftParenthesis;
+            }
+            else if (_tokenContents == ")") {
+                token.Type = TokenType::RightParenthesis;
+            }
+            else if (_tokenContents == "[") {
+                token.Type = TokenType::LeftSquareBracket;
+            }
+            else if (_tokenContents == "]") {
+                token.Type = TokenType::RightSquareBracket;
+            }
+            else if (_tokenContents == "{") {
+                token.Type = TokenType::LeftCurlyBracket;
+            }
+            else if (_tokenContents == "}") {
+                token.Type = TokenType::RightCurlyBracket;
+            }
+            else if (_tokenContents == "\\{") {
+                token.Type = TokenType::EscapedLeftCurlyBracket;
+            }
+            else if (_tokenContents == "\\}") {
+                token.Type = TokenType::EscapedRightCurlyBracket;
+            }
+            else if (_tokenContents == "<") {
+                token.Type = TokenType::LeftAngleBracket;
+            }
+            else if (_tokenContents == ">") {
+                token.Type = TokenType::RightAngleBracket;
+            }
+            else {
+                throw std::runtime_error("Unknown operator found");
+            }
+        }
+        else {
+            throw std::runtime_error("Token not found");
         }
 
-        // Return the current character
-        return currentChar;
+        ClearBuilder();
+
+        return token;
     }
 
-    // DEV NOTE: Update `IsFinished()` to only be true after every element has been passed through (even the last one)
-    bool StringIterator::IsFinished() const {
-        return _currentIndex + 1 == _strLength;
+    bool TokenBuilder::HasUnfinishedToken() const {
+        return !_tokenContents.empty();
+    }
+
+    void TokenBuilder::ClearBuilder() {
+        _tokenContents.clear();
+        ErrorMessage.clear();
+        TokenType _tokenType = TokenType::Unknown;
+
+        _tokenMustBeNum = false;
+        _tokenMustBeSymbol = false;
+        _hasDotBeenFound = false;
+        _hasBackslashBeenFound = false;
     }
 
     std::vector<Token> TokenizeLatex(std::string latex) {
         std::vector<Token> tokens;
-        StringIterator latexIterator(latex);
+        TokenBuilder builder;
 
-        while (!latexIterator.IsFinished()) {
-            DEBUG_LOG(latexIterator.IsFinished());
-            DEBUG_LOG(latexIterator.Peak());
+        int loopCount = 0;
+        constexpr int maxLoopCount = 2000000;
 
-            char currentChar = latexIterator.Peak();
+        for (int i = 0; i < latex.length() && loopCount < maxLoopCount; ++i) {
+            char ch = latex.at(i);
 
-            if (currentChar == ' ') {
-                latexIterator.Advance();
-            }
-            else if (currentChar == '+') {
-                tokens.emplace_back(TokenType::Plus);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '-') {
-                tokens.emplace_back(TokenType::Minus);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '*') {
-                tokens.emplace_back(TokenType::Star);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '_') {
-                tokens.emplace_back(TokenType::Underscore);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '^') {
-                tokens.emplace_back(TokenType::UpArrow);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '(') {
-                tokens.emplace_back(TokenType::LeftParenthesis);
-                latexIterator.Advance();
-            }
-            else if (currentChar == ')') {
-                tokens.emplace_back(TokenType::RightParenthesis);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '[') {
-                tokens.emplace_back(TokenType::LeftSquareBracket);
-                latexIterator.Advance();
-            }
-            else if (currentChar == ']') {
-                tokens.emplace_back(TokenType::RightSquareBracket);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '{') {
-                tokens.emplace_back(TokenType::LeftCurlyBracket);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '}') {
-                tokens.emplace_back(TokenType::RightCurlyBracket);
-                latexIterator.Advance();
-            }
-            else if (currentChar == '\\') {
-                currentChar = latexIterator.Advance();
+            TokenBuilder::AppendingResult result = builder.AppendToToken(ch);
 
-                if (latexIterator.IsFinished()) {
-                    // DEV NOTE: I need to update this so it throws an error
+            switch (result) {
+                case TokenBuilder::AppendingResult::StillWorking:
+                    break;
+                case TokenBuilder::AppendingResult::ReadyToFinishWithoutLastChar:
+                    --i;
+                case TokenBuilder::AppendingResult::ReadyToFinishWithLastChar: {
+                    Token token = builder.FinishToken();
+                    tokens.emplace_back(token);
+                    break;
                 }
-                else if (currentChar == ' ' || currentChar == ',' || currentChar == ':' || currentChar == ';' || currentChar == '!' || currentChar == '\\') {
-                    // If the current character and the one preceeding deal with whitespace, don't tokenize them
-                    latexIterator.Advance();
-                }
-                else if (std::isalpha(currentChar)) {
-                    std::string symbolLiteral;
-
-                    while (std::isalpha(latexIterator.Peak())) {
-                        symbolLiteral += latexIterator.Advance();
-
-                        if (latexIterator.IsFinished()) {
-                            break;
-                        }
-                    }
-
-                    tokens.emplace_back(TokenType::Symbol, symbolLiteral);
-                }
+                case TokenBuilder::AppendingResult::ErrorFound:
+                    throw std::runtime_error(builder.ErrorMessage);
+                default:
+                    throw std::runtime_error("Unknown `AppendingResult` option");
             }
-            else if (std::isdigit(currentChar)) {
-                std::string numLiteral;
-                bool wasDecimalPointFound = false;
 
-                while (!latexIterator.IsFinished()) {
-                    currentChar = latexIterator.Peak();
+            ++loopCount;
+        }
 
-                    if (currentChar == '.' && !wasDecimalPointFound) {
-                        numLiteral += latexIterator.Advance();
-
-                        wasDecimalPointFound = true;
-                    }
-                    else if (std::isdigit(currentChar)) {
-                        numLiteral += latexIterator.Advance();
-                    }
-                    else {
-                        break;
-                    }
-                }
-
-                tokens.emplace_back(TokenType::Number, numLiteral);
-            }
-            else if (std::isalpha(currentChar)) {
-                std::string symbol(1, currentChar);
-
-                tokens.emplace_back(TokenType::Symbol, symbol);
-            }
-            else {
-                throw std::runtime_error(std::format("Cannot tokenize `{}`", currentChar));
-            }
+        if (loopCount == maxLoopCount) {
+            // Throw an error if an infinite loop occurs
+            throw std::runtime_error("Infinite loop occurred during tokenization of the LaTeX");
+        }
+        else if (builder.HasUnfinishedToken()) {
+            // If the `builder` isn't finished, try to finish it
+            // Throw an exception if it can't be finished
+            Token token = builder.FinishToken();
+            tokens.emplace_back(token);
         }
 
         return tokens;

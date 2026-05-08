@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #pragma once
@@ -9,44 +10,61 @@ namespace sparrow_math::internal::ParsingUtils {
         Plus,
         Minus,
         Star,
+        ForwardSlash,
         Underscore,
         UpArrow,
+        Ampersand,
+        EqualSign,
+        DoubleBackslash,
         LeftParenthesis,
         RightParenthesis,
         LeftSquareBracket,
         RightSquareBracket,
         LeftCurlyBracket,
-        RightCurlyBracket
+        RightCurlyBracket,
+        EscapedLeftCurlyBracket,
+        EscapedRightCurlyBracket,
+        LeftAngleBracket,
+        RightAngleBracket,
+        Unknown
     };
 
     struct Token {
-        const TokenType Type;
-        const std::string Value;
+        TokenType Type;
+        std::string Value;
 
         Token(TokenType type, std::string value = "") : Type(type), Value(value) {}
 
         std::string ToString() const;
     };
 
-    // DEV NOTE: Create a way to handle errors in the tokenization
-    // class TokenizationException : public std::runtime_error {
-    //     // TokenizationException(std::string message) : std::runtime_error(message) {}
-    // };
-
-    class StringIterator {
+    class TokenBuilder {
     public:
-        StringIterator(std::string str) : _str(str), _strLength(str.length()) {}
+        enum class AppendingResult {
+            StillWorking,
+            ReadyToFinishWithLastChar,
+            ReadyToFinishWithoutLastChar,
+            ErrorFound
+        };
 
-        char Peak() const;
+        AppendingResult AppendToToken(const char& ch);
+        Token FinishToken();
 
-        char Advance();
+        std::string ErrorMessage;
 
-        bool IsFinished() const;
-
+        bool HasUnfinishedToken() const;
     private:
-        const std::string _str;
-        const size_t _strLength;
-        size_t _currentIndex = 0;
+        std::string _tokenContents;
+        TokenType _tokenType = TokenType::Unknown;
+
+        bool _hasDotBeenFound = false;
+        bool _hasBackslashBeenFound = false;
+
+        bool _tokenMustBeSymbol = false;
+        bool _tokenMustBeNum = false;
+        bool _tokenMustBeOperator = false;
+
+        void ClearBuilder();
     };
 
     std::vector<Token> TokenizeLatex(std::string latex);

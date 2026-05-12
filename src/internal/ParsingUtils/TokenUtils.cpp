@@ -127,7 +127,7 @@ namespace sparrow_math::internal::ParsingUtils {
                     case ':':
                     case ';':
                     case '!':
-                    case '\n':
+                    // case '\n':
                         ClearBuilder();
                         return AppendingResult::StillWorking;
                     case '\\':
@@ -144,7 +144,7 @@ namespace sparrow_math::internal::ParsingUtils {
             }
         }
         else {
-            if (ch == ' ' || ch == '\n') {
+            if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
                 if (_tokenContents.empty()) {
                     // Don't append the last space character to the working token
                     return AppendingResult::StillWorking;
@@ -205,73 +205,73 @@ namespace sparrow_math::internal::ParsingUtils {
     }
 
     Token TokenBuilder::FinishToken() {
-        Token token(TokenType::Unknown);
+        Token token(Token::TokenType::Unknown);
 
         if (_tokenMustBeSymbol) {
-            token.Type = TokenType::Symbol;
+            token.Type = Token::TokenType::Symbol;
             token.Value = _tokenContents;
         }
         else if (_tokenMustBeNum) {
-            token.Type = TokenType::Number;
+            token.Type = Token::TokenType::Number;
             token.Value = _tokenContents;
         }
         else if (_tokenMustBeOperator) {
             if (_tokenContents == "+") {
-                token.Type = TokenType::Plus;
+                token.Type = Token::TokenType::Plus;
             }
             else if (_tokenContents == "-") {
-                token.Type = TokenType::Minus;
+                token.Type = Token::TokenType::Minus;
             }
             else if (_tokenContents == "*") {
-                token.Type = TokenType::Star;
+                token.Type = Token::TokenType::Star;
             }
             else if (_tokenContents == "/") {
-                token.Type = TokenType::ForwardSlash;
+                token.Type = Token::TokenType::ForwardSlash;
             }
             else if (_tokenContents == "_") {
-                token.Type = TokenType::Underscore;
+                token.Type = Token::TokenType::Underscore;
             }
             else if (_tokenContents == "^") {
-                token.Type = TokenType::UpArrow;
+                token.Type = Token::TokenType::UpArrow;
             }
             else if (_tokenContents == "&") {
-                token.Type = TokenType::Ampersand;
+                token.Type = Token::TokenType::Ampersand;
             }
             else if (_tokenContents == "=") {
-                token.Type = TokenType::EqualSign;
+                token.Type = Token::TokenType::EqualSign;
             }
             else if (_tokenContents == "\\\\") {
-                token.Type = TokenType::DoubleBackslash;
+                token.Type = Token::TokenType::DoubleBackslash;
             }
             else if (_tokenContents == "(") {
-                token.Type = TokenType::LeftParenthesis;
+                token.Type = Token::TokenType::LeftParenthesis;
             }
             else if (_tokenContents == ")") {
-                token.Type = TokenType::RightParenthesis;
+                token.Type = Token::TokenType::RightParenthesis;
             }
             else if (_tokenContents == "[") {
-                token.Type = TokenType::LeftSquareBracket;
+                token.Type = Token::TokenType::LeftSquareBracket;
             }
             else if (_tokenContents == "]") {
-                token.Type = TokenType::RightSquareBracket;
+                token.Type = Token::TokenType::RightSquareBracket;
             }
             else if (_tokenContents == "{") {
-                token.Type = TokenType::LeftCurlyBracket;
+                token.Type = Token::TokenType::LeftCurlyBracket;
             }
             else if (_tokenContents == "}") {
-                token.Type = TokenType::RightCurlyBracket;
+                token.Type = Token::TokenType::RightCurlyBracket;
             }
             else if (_tokenContents == "\\{") {
-                token.Type = TokenType::EscapedLeftCurlyBracket;
+                token.Type = Token::TokenType::EscapedLeftCurlyBracket;
             }
             else if (_tokenContents == "\\}") {
-                token.Type = TokenType::EscapedRightCurlyBracket;
+                token.Type = Token::TokenType::EscapedRightCurlyBracket;
             }
             else if (_tokenContents == "<") {
-                token.Type = TokenType::LeftAngleBracket;
+                token.Type = Token::TokenType::LeftAngleBracket;
             }
             else if (_tokenContents == ">") {
-                token.Type = TokenType::RightAngleBracket;
+                token.Type = Token::TokenType::RightAngleBracket;
             }
             else {
                 throw std::runtime_error("Unknown operator found");
@@ -293,7 +293,7 @@ namespace sparrow_math::internal::ParsingUtils {
     void TokenBuilder::ClearBuilder() {
         _tokenContents.clear();
         ErrorMessage.clear();
-        TokenType _tokenType = TokenType::Unknown;
+        Token::TokenType _tokenType = Token::TokenType::Unknown;
 
         _tokenMustBeNum = false;
         _tokenMustBeSymbol = false;

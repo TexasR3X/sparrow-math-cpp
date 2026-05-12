@@ -4,32 +4,32 @@
 
 #pragma once
 namespace sparrow_math::internal::ParsingUtils {
-    enum class TokenType {
-        Number,
-        Symbol,
-        Plus,
-        Minus,
-        Star,
-        ForwardSlash,
-        Underscore,
-        UpArrow,
-        Ampersand,
-        EqualSign,
-        DoubleBackslash,
-        LeftParenthesis,
-        RightParenthesis,
-        LeftSquareBracket,
-        RightSquareBracket,
-        LeftCurlyBracket,
-        RightCurlyBracket,
-        EscapedLeftCurlyBracket,
-        EscapedRightCurlyBracket,
-        LeftAngleBracket,
-        RightAngleBracket,
-        Unknown
-    };
-
     struct Token {
+        enum class TokenType {
+            Number,
+            Symbol,
+            Plus,
+            Minus,
+            Star,
+            ForwardSlash,
+            Underscore,
+            UpArrow,
+            Ampersand,
+            EqualSign,
+            DoubleBackslash,
+            LeftParenthesis,
+            RightParenthesis,
+            LeftSquareBracket,
+            RightSquareBracket,
+            LeftCurlyBracket,
+            RightCurlyBracket,
+            EscapedLeftCurlyBracket,
+            EscapedRightCurlyBracket,
+            LeftAngleBracket,
+            RightAngleBracket,
+            Unknown
+        };
+
         TokenType Type;
         std::string Value;
 
@@ -55,7 +55,7 @@ namespace sparrow_math::internal::ParsingUtils {
         bool HasUnfinishedToken() const;
     private:
         std::string _tokenContents;
-        TokenType _tokenType = TokenType::Unknown;
+        Token::TokenType _tokenType = Token::TokenType::Unknown;
 
         bool _hasDotBeenFound = false;
         bool _hasBackslashBeenFound = false;

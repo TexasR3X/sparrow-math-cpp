@@ -3,11 +3,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "TokenUtils.hpp"
+#include "token_utils.hpp"
 
 #define DEBUG_LOG(code) std::cout << "[" << __LINE__ << "] " << #code << ": " << (code) << std::endl
 
-namespace sparrow_math::internal::ParsingUtils {
+namespace sparrow_math::internal::parsing_utils {
     std::string Token::ToString() const {
         std::string type;
 
@@ -39,8 +39,8 @@ namespace sparrow_math::internal::ParsingUtils {
             case TokenType::EqualSign:
                 type = "EqualSign";
                 break;
-            case TokenType::DoubleBackslash:
-                type = "DoubleBackslash";
+            case TokenType::LineBreak:
+                type = "LineBreak";
                 break;
             case TokenType::LeftParenthesis:
                 type = "LeftParenthesis";
@@ -241,7 +241,7 @@ namespace sparrow_math::internal::ParsingUtils {
                 token.Type = Token::TokenType::EqualSign;
             }
             else if (_tokenContents == "\\\\") {
-                token.Type = Token::TokenType::DoubleBackslash;
+                token.Type = Token::TokenType::LineBreak;
             }
             else if (_tokenContents == "(") {
                 token.Type = Token::TokenType::LeftParenthesis;

@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Library target
 add_library(sparrow_math
     src/sparrow_math.cpp
-    src/internal/ParsingUtils/TokenUtils.cpp
+    src/internal/parsing_utils/token_utils.cpp
 )
 
 target_include_directories(sparrow_math

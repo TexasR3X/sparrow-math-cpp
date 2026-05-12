@@ -3,7 +3,7 @@
 #include <vector>
 
 #pragma once
-namespace sparrow_math::internal::ParsingUtils {
+namespace sparrow_math::internal::parsing_utils {
     struct Token {
         enum class TokenType {
             Number,
@@ -16,7 +16,7 @@ namespace sparrow_math::internal::ParsingUtils {
             UpArrow,
             Ampersand,
             EqualSign,
-            DoubleBackslash,
+            LineBreak,
             LeftParenthesis,
             RightParenthesis,
             LeftSquareBracket,

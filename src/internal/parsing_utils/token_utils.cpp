@@ -1,12 +1,9 @@
 #include <format>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include "token_utils.hpp"
 #include "../str_utils.hpp"
-
-#define DEBUG_LOG(code) std::cout << "[" << __LINE__ << "] " << #code << ": " << (code) << std::endl
 
 namespace sparrow_math::internal::parsing_utils {
     std::string Token::ToString() const {

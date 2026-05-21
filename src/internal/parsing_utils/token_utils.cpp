@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "token_utils.hpp"
+#include "../str_utils.hpp"
 
 #define DEBUG_LOG(code) std::cout << "[" << __LINE__ << "] " << #code << ": " << (code) << std::endl
 
@@ -12,8 +13,8 @@ namespace sparrow_math::internal::parsing_utils {
         std::string type;
 
         switch (Type) {
-            case TokenType::Number:
-                type = "Number";
+            case TokenType::Num:
+                type = "Num";
                 break;
             case TokenType::Symbol:
                 type = "Symbol";
@@ -81,7 +82,7 @@ namespace sparrow_math::internal::parsing_utils {
 
     TokenBuilder::AppendingResult TokenBuilder::AppendToToken(const char& ch) {
         if (_tokenMustBeNum) {
-            if (std::isdigit(ch)) {
+            if (IsCharNumeric(ch)) {
                 _tokenContents += ch;
                 return AppendingResult::StillWorking;
             }
@@ -102,7 +103,7 @@ namespace sparrow_math::internal::parsing_utils {
             }
         }
         else if (_tokenMustBeSymbol) {
-            if (std::isalnum(ch)) {
+            if (IsCharAlphabetical(ch)) {
                 _tokenContents += ch;
                 return AppendingResult::StillWorking;
             }
@@ -111,23 +112,25 @@ namespace sparrow_math::internal::parsing_utils {
             }
         }
         else if (_hasBackslashBeenFound) {
-            if (std::isalpha(ch)) {
+            if (IsCharAlphabetical(ch)) {
                 _tokenMustBeSymbol = true;
                 _tokenContents += ch;
                 return AppendingResult::StillWorking;
             }
-            else if (std::isdigit(ch)) {
+            else if (IsCharNumeric(ch)) {
                 ErrorMessage = "A LaTeX command cannot start with a number";
                 return AppendingResult::ErrorFound;
             }
+            else if (IsCharWhitespace(ch)) {
+                ClearBuilder();
+                return AppendingResult::StillWorking;
+            }
             else {
                 switch (ch) {
-                    case ' ':
                     case ',':
                     case ':':
                     case ';':
                     case '!':
-                    // case '\n':
                         ClearBuilder();
                         return AppendingResult::StillWorking;
                     case '\\':
@@ -144,7 +147,7 @@ namespace sparrow_math::internal::parsing_utils {
             }
         }
         else {
-            if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
+            if (IsCharWhitespace(ch)) {
                 if (_tokenContents.empty()) {
                     // Don't append the last space character to the working token
                     return AppendingResult::StillWorking;
@@ -165,12 +168,12 @@ namespace sparrow_math::internal::parsing_utils {
                 _tokenContents += ch;
                 return AppendingResult::StillWorking;
             }
-            else if (std::isalpha(ch)) {
+            else if (IsCharAlphabetical(ch)) {
                 _tokenMustBeSymbol = true;
                 _tokenContents += ch;
                 return AppendingResult::ReadyToFinishWithLastChar;
             }
-            else if (std::isdigit(ch)) {
+            else if (IsCharNumeric(ch)) {
                 _tokenMustBeNum = true;
                 _tokenContents += ch;
                 return AppendingResult::StillWorking;
@@ -212,7 +215,7 @@ namespace sparrow_math::internal::parsing_utils {
             token.Value = _tokenContents;
         }
         else if (_tokenMustBeNum) {
-            token.Type = Token::TokenType::Number;
+            token.Type = Token::TokenType::Num;
             token.Value = _tokenContents;
         }
         else if (_tokenMustBeOperator) {

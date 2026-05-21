@@ -6,7 +6,7 @@
 namespace sparrow_math::internal::parsing_utils {
     struct Token {
         enum class TokenType {
-            Number,
+            Num,
             Symbol,
             Plus,
             Minus,

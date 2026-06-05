@@ -6,6 +6,9 @@
 
 #pragma once
 namespace sparrow_math::internal::parsing_utils {
+    class Node;
+    class BranchNode;
+
     class Node {
     public:
         enum class NodeType {
@@ -14,10 +17,15 @@ namespace sparrow_math::internal::parsing_utils {
             Sum,
             Product,
             Power,
+            Delimiters,
             Expr
         };
 
-        Node* Parent = nullptr;
+        static int GetNodeTypeRank(NodeType type) {
+            return (int)type;
+        }
+
+        BranchNode* Parent = nullptr;
 
         virtual ~Node() = default;
 
@@ -25,7 +33,11 @@ namespace sparrow_math::internal::parsing_utils {
 
         virtual Node* GetChildAt(size_t index) const = 0;
 
-        virtual void PushChild(std::unique_ptr<Node> node) = 0;
+        virtual Node* LastChild() const = 0;
+
+        virtual void AppendChild(std::unique_ptr<Node> node) = 0;
+
+        virtual std::unique_ptr<Node> RemoveLastChild() = 0;
 
         virtual std::string DebugToString() const = 0;
     protected:
@@ -41,9 +53,9 @@ namespace sparrow_math::internal::parsing_utils {
 
     class NumNode : public Node {
     public:
-        long long Num;
+        double Num;
 
-        NumNode(long long num) : Node(), Num(num) {}
+        NumNode(double num) : Node(), Num(num) {}
 
         NodeType Type() const override {
             return NodeType::Num;
@@ -53,8 +65,16 @@ namespace sparrow_math::internal::parsing_utils {
             return nullptr;
         }
 
-        void PushChild(std::unique_ptr<Node> node) override {
-            throw std::runtime_error("Cannot push child to `NumNode`");
+        Node* LastChild() const override {
+            return nullptr;
+        }
+
+        void AppendChild(std::unique_ptr<Node> node) override {
+            throw std::runtime_error("Cannot append a child node to `NumNode`");
+        }
+
+        std::unique_ptr<Node> RemoveLastChild() override {
+            throw std::runtime_error("Cannot remove a child node to `NumNode`");
         }
 
         std::string DebugToString() const override {
@@ -74,7 +94,21 @@ namespace sparrow_math::internal::parsing_utils {
             return _children.at(index).get();
         }
 
-        void PushChild(std::unique_ptr<Node> node) override;
+        Node* LastChild() const override {
+            return GetChildAt(_children.size() - 1);
+        }
+
+        void AppendChild(std::unique_ptr<Node> node) override;
+
+        std::unique_ptr<Node> RemoveLastChild() override;
+
+        // BranchNode* FindGroupingAncestor() const;
+
+        BranchNode* FindAncestorOfType(const NodeType& type, const bool& stayWithinDels) const;
+
+        BranchNode* FindAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels);
+
+        void InsertParentBetweenSelfAndLastChild(std::unique_ptr<BranchNode> parent);
 
         std::string DebugToString() const override {
             std::string name = _nodeTypeMap[Type()];
@@ -115,5 +149,5 @@ namespace sparrow_math::internal::parsing_utils {
         ExprNode() : BranchNode(NodeType::Expr) {}
     };
 
-    std::string ParseExpr(std::vector<Token> tokens);
+    std::string ParseExpr(const std::vector<Token>& tokens);
 }

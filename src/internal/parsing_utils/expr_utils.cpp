@@ -1,9 +1,70 @@
-// #include <stack>
+#include <cstddef>
+#include <format>
+#include <iostream>
+#include <stdexcept>
 #include "token_utils.hpp"
 #include "expr_utils.hpp"
 
 namespace sparrow_math::internal::parsing_utils {
+    // ========== Local Functions ========== //
+
+    Node::NodeType MapTokenTypeToNodeType(const Token::TokenType& tokenType) {
+        switch (tokenType) {
+            case Token::TokenType::Num:
+                return Node::NodeType::Num;
+            case Token::TokenType::Plus:
+                return Node::NodeType::Sum;
+            case Token::TokenType::Star:
+                return Node::NodeType::Product;
+            case Token::TokenType::UpArrow:
+                return Node::NodeType::Power;
+            default:
+                throw std::runtime_error("Unfinished code in `MapTokenTypeToNodeType()`");
+        }
+    }
+
+    void InsertNodeBetweenFocusAndLastChildThenMoveFocus(BranchNode*& focus, std::unique_ptr<BranchNode> newNode) {
+        // Save the address of the new node as a raw pointer
+        auto newNodeRawPtr = newNode.get();
+
+        // Remove the last child from the focus
+        auto lastChild = focus->RemoveLastChild();
+
+        // Append that child to its new node
+        newNode->AppendChild(std::move(lastChild));
+
+        // Append the new node to the focus
+        focus->AppendChild(std::move(newNode));
+
+        // Move focus on the new node
+        focus = newNodeRawPtr;
+    }
+
+
+
+    // ========== NumNode ========== //
+
+    std::string NumNode::DebugToString() const {
+        return std::format("{}({})", _nodeTypeMap[NodeType::Num], Num);
+    }
+
+
+
+    // ========== BranchNode ========== //
+
+    Node* BranchNode::GetChildAt(size_t index) const {
+        return _children.at(index).get();
+    }
+
+    Node* BranchNode::LastChild() const {
+        return _children.back().get();
+    }
+
     void BranchNode::AppendChild(std::unique_ptr<Node> node) {
+        if (this == node.get()) {
+            throw std::runtime_error("Internal Error: A parent node cannot contain a child node equal to itself");
+        }
+
         node->Parent = this;
 
         _children.push_back(std::move(node));
@@ -17,23 +78,11 @@ namespace sparrow_math::internal::parsing_utils {
         return std::move(lastChild);
     }
 
-    // BranchNode* BranchNode::FindGroupingAncestor() const {
-    //     if (!Parent) {
-    //         return nullptr;
-    //     }
-    //     else if (Parent->Type() == NodeType::Expr || Parent->Type() == NodeType::Delimiters) {
-    //         return Parent;
-    //     }
-    //     else {
-    //         return Parent->FindGroupingAncestor();
-    //     }
-    // }
-
     BranchNode* BranchNode::FindAncestorOfType(const NodeType& type, const bool& stayWithinDels) const {
-        if (!Parent || (stayWithinDels && Parent->Type() == NodeType::Delimiters && type != NodeType::Delimiters)) {
+        if (!Parent || (stayWithinDels && Parent->Type == NodeType::DelimiterGrouping && type != NodeType::DelimiterGrouping)) {
             return nullptr;
         }
-        else if (Parent->Type() == type) {
+        else if (Parent->Type == type) {
             return Parent;
         }
         else {
@@ -42,192 +91,104 @@ namespace sparrow_math::internal::parsing_utils {
     }
 
     BranchNode* BranchNode::FindAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels) {
-        return Type() == type ? this : FindAncestorOfType(type, stayWithinDels);
+        return Type == type ? this : FindAncestorOfType(type, stayWithinDels);
     }
 
-    void BranchNode::InsertParentBetweenSelfAndLastChild(std::unique_ptr<BranchNode> parent) {
-        // Remove the last child of the this node
-        auto lastChild = RemoveLastChild();
-
-        // Append that child to its new parent node
-        parent->AppendChild(std::move(lastChild));
-
-        // Append the new parent to the this node
-        AppendChild(std::move(parent));
-    }
-
-    // void _AppendChildToFocusThenMoveFocus(BranchNode*& focusNode, std::unique_ptr<BranchNode> child) {
-    //     // Store the child node's address as a raw pointer
-    //     auto childRawPtr = child.get();
-
-    //     // Make the child node an actual child of the current focused node
-    //     focusNode->AppendChild(std::move(child));
-
-    //     // Re-assign the focused node to point to the child
-    //     focusNode = childRawPtr;
-    // }
-
-    // void _PlaceParentBetweenFocusAndChildThenMoveFocus(BranchNode*& focusNode, std::unique_ptr<BranchNode> newParent) {
-    //     // Save the address of the parent as a raw pointer
-    //     auto newParentRawPtr = newParent.get();
-
-    //     // Remove the last child of the focused node
-    //     auto lastChild = focusNode->RemoveLastChild();
-
-    //     // Append that child to its new parent node
-    //     newParent->AppendChild(std::move(lastChild));
-
-    //     // Append the new parent to the focused node
-    //     focusNode->AppendChild(std::move(newParent));
-
-    //     // Move the focus to the new parent
-    //     focusNode = newParentRawPtr;
-    // }
-
-    inline void _HandleNumToken(BranchNode* const focus, const std::string& numStr) {
-        auto num = std::stod(numStr);
-        auto numNode = std::make_unique<NumNode>(num);
-
-        focus->AppendChild(std::move(numNode));
-    }
-
-    inline void _HandlePlusToken(BranchNode*& focus) {
-        switch (focus->Type()) {
-            case Node::NodeType::Expr:
-            case Node::NodeType::Delimiters: {
-                // Store a raw pointer to the node that was the focus
-                auto oldFocus = focus;
-
-                // Create the sum node
-                auto sumNode = std::make_unique<SumNode>();
-
-                // Change the focus to the sum
-                focus = sumNode.get();
-
-                // Insert the sum inbetween the old focus and the last appended node
-                oldFocus->InsertParentBetweenSelfAndLastChild(std::move(sumNode));
-                break;
-            }
-            case Node::NodeType::Sum:
-                // If the next token is a `Plus` and the focused node is a sum, then nothing needs to be done
-                break;
-            default: {
-                // Find the nearest sum ancestor
-                auto sumNode = focus->FindAncestorOfType(Node::NodeType::Sum, true);
-
-                // Set the focus to the sum node
-                focus = sumNode;
-            }
+    BranchNode* BranchNode::FindGroupingAncestor() const {
+        if (!Parent) {
+            throw std::runtime_error("Code that shouldn't be reached; Node has no grouping ancestor");
+        }
+        else if (Parent->Type == NodeType::Expr || Parent->Type == NodeType::DelimiterGrouping) {
+            return Parent;
+        }
+        else {
+            return Parent->FindGroupingAncestor();
         }
     }
 
-    inline void _HandleStarToken(BranchNode*& focusNode) {
-        // switch (focusNode->Type()) {
+    BranchNode* BranchNode::FindGroupingAncestorOrSelf() {
+        if (Type == NodeType::Expr || Type == NodeType::DelimiterGrouping) {
+            return this;
+        }
+        else if (!Parent) {
+            throw std::runtime_error("Code that shouldn't be reached; Node has no grouping ancestor");
+        }
+        else {
+            return Parent->FindGroupingAncestorOrSelf();
+        }
+    }
 
-        // }
+    std::string BranchNode::DebugToString() const {
+        std::string name = _nodeTypeMap[Type];
+        std::string childrenStr;
 
-        // switch (focusNode->Type()) {
-        //     case Node::NodeType::Expr:
-        //     case Node::NodeType::Delimiters:
-        //     case Node::NodeType::Sum: {
-        //         auto productNode = std::make_unique<ProductNode>();
-        //         _AppendChildToFocusThenMoveFocus(focusNode, std::move(productNode));
-        //         break;
-        //     }
-        //     case Node::NodeType::Product:
-        //         break;
-        //     case Node::NodeType::Power: {
-        //         auto productNode = std::make_unique<ProductNode>();
-        //         _AppendChildToFocusThenMoveFocus(focusNode, std::move(productNode));
-        //         break;
-        //     }
-        //     default:
-        //         throw std::runtime_error("Unfinished code reached");
-        // }
+        for (size_t i = 0; i < _children.size(); ++i) {
+            if (i) {
+                childrenStr += ", ";
+            }
+
+            childrenStr += _children.at(i)->DebugToString();
+        }
+
+        return std::format("{}({})", name, childrenStr);
     }
 
 
+
+    // ========== Public Non-method Functions ========== //
 
     std::string ParseExpr(const std::vector<Token>& tokens) {
         auto exprNode = std::make_unique<ExprNode>();
+        BranchNode* focus = exprNode.get();
 
-        Token currentToken = Token(Token::TokenType::Unknown);
-        Token lastToken = Token(Token::TokenType::Unknown);
-        BranchNode* focusNode = exprNode.get();
+        for (const auto& currentToken : tokens) {
+            auto currentNodeType = MapTokenTypeToNodeType(currentToken.Type);
 
-        for (size_t i = 0; i + 1UL < tokens.size(); ++i) {
-            if (i) lastToken = tokens.at(i - 1);
-            currentToken = tokens.at(i);
+            if (currentToken.Type == Token::TokenType::Num) {
+                // Turn the token's string value into a number
+                auto num = std::stod(currentToken.Value);
 
-            switch (currentToken.Type) {
-                case Token::TokenType::Num: {
-                    auto num = std::stod(currentToken.Value);
-                    auto numNode = std::make_unique<NumNode>(num);
+                // Create a `NumNode` from the number
+                auto numNode = std::make_unique<NumNode>(num);
 
-                    focusNode->AppendChild(std::move(numNode));
+                // Append `numNode` to the focus
+                focus->AppendChild(std::move(numNode));
+            }
+            else if ((int)currentNodeType < (int)focus->Type) {
+                if (auto ancestor = focus->FindAncestorOfType(currentNodeType, true)) {
+                    // Move the focus to the ancestor of type `currentNodeType`
+                    focus = ancestor;
+
+                    // NOTE: The ancestor is the current node
+                    // NOTE: We don't need to create another node for the current token
                 }
-                case Token::TokenType::Plus:
-                case Token::TokenType::Star:
-                case Token::TokenType::UpArrow: {
+                else {
+                    // Create the current node for the current token
+                    auto currentNode = std::make_unique<BranchNode>(currentNodeType);
 
+                    // Move the focus to the ancestor
+                    focus = focus->FindGroupingAncestorOrSelf();
+
+                    // Insert the current node between the focus and the focus's last child
+                    // Then move the focus to the current node
+                    InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, std::move(currentNode));
                 }
             }
+            else if ((int)currentNodeType > (int)focus->Type) {
+                // Create the current node for the current token
+                auto currentNode = std::make_unique<BranchNode>(currentNodeType);
+
+                // Insert the current node between the focus and the focus's last child
+                // Then move the focus to the current node
+                InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, std::move(currentNode));
+            }
+
+            std::cout << "currentToken: " << currentToken.DebugToString() << std::endl;
+            std::cout << "exprNode: " << exprNode->DebugToString() << std::endl;
+            std::cout << "focus: " << focus->DebugToString() << std::endl;
+            std::cout << std::endl;
         }
 
-
-
-
-
-
-
-        // auto exprNode = std::make_unique<ExprNode>();
-
-        // Token currentToken = Token(Token::TokenType::Unknown);
-        // Token lastToken = Token(Token::TokenType::Unknown);
-        // BranchNode* focusNode = exprNode.get();
-
-        // for (size_t i = 0; i + 1UL < tokens.size(); ++i) {
-        //     if (i) {
-        //         lastToken = tokens.at(i - 1);
-        //     }
-        //     currentToken = tokens.at(i);
-
-        //     switch (currentToken.Type) {
-        //         case Token::TokenType::Num:
-        //             _HandleNumToken(focusNode, currentToken.Value);
-        //             break;
-        //         case Token::TokenType::Plus:
-        //             _HandlePlusToken(focusNode);
-        //             break;
-        //         case Token::TokenType::Star:
-        //             _HandleStarToken(focusNode);
-        //             break;
-        //         default:
-        //             throw std::runtime_error("Unfinished code reached");
-        //     }
-        // }
-
-
-
-        // // DEV NOTE: Temporary Test Code
-        // ExprNode exprNode;
-
-        // auto node1 = std::make_unique<NumNode>(1);
-        // auto node2 = std::make_unique<NumNode>(2);
-        // auto node3 = std::make_unique<NumNode>(3);
-        // auto node4 = std::make_unique<NumNode>(4);
-
-        // auto sum = std::make_unique<SumNode>();
-
-        // sum->AppendChild(std::move(node4));
-
-        // exprNode.AppendChild(std::move(node1));
-        // exprNode.AppendChild(std::move(node2));
-        // exprNode.AppendChild(std::move(sum));
-        // exprNode.AppendChild(std::move(node3));
-
-        // return exprNode.DebugToString();
-
-        return "";
+        return exprNode->DebugToString();
     }
 }

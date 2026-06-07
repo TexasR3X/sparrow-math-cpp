@@ -45,8 +45,11 @@ CMakeUserPresets.json
 *.log
 *.cache
 *.tmp
+tmp/
 
 ccache/
 .cache/
 
 .DS_Store
+
+compile_commands.json

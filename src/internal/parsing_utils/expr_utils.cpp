@@ -94,18 +94,6 @@ namespace sparrow_math::internal::parsing_utils {
         return Type == type ? this : FindAncestorOfType(type, stayWithinDels);
     }
 
-    BranchNode* BranchNode::FindGroupingAncestor() const {
-        if (!Parent) {
-            throw std::runtime_error("Code that shouldn't be reached; Node has no grouping ancestor");
-        }
-        else if (Parent->Type == NodeType::Expr || Parent->Type == NodeType::DelimiterGrouping) {
-            return Parent;
-        }
-        else {
-            return Parent->FindGroupingAncestor();
-        }
-    }
-
     BranchNode* BranchNode::FindGroupingAncestorOrSelf() {
         if (Type == NodeType::Expr || Type == NodeType::DelimiterGrouping) {
             return this;

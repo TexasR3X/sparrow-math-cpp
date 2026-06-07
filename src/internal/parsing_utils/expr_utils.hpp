@@ -1,4 +1,3 @@
-#include <format>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -12,42 +11,32 @@ namespace sparrow_math::internal::parsing_utils {
     class Node {
     public:
         enum class NodeType {
-            Num,
-            Symbol,
             Sum,
             Product,
             Power,
-            Delimiters,
-            Expr
+            DelimiterGrouping,
+            Expr,
+            Symbol,
+            Num
         };
 
-        static int GetNodeTypeRank(NodeType type) {
-            return (int)type;
-        }
+        const NodeType Type;
 
         BranchNode* Parent = nullptr;
 
+        Node(const NodeType& type) : Type(type) {}
+
         virtual ~Node() = default;
-
-        virtual NodeType Type() const = 0;
-
-        virtual Node* GetChildAt(size_t index) const = 0;
-
-        virtual Node* LastChild() const = 0;
-
-        virtual void AppendChild(std::unique_ptr<Node> node) = 0;
-
-        virtual std::unique_ptr<Node> RemoveLastChild() = 0;
 
         virtual std::string DebugToString() const = 0;
     protected:
         static inline std::unordered_map<NodeType, std::string> _nodeTypeMap = {
-            { NodeType::Num, "NUM" },
-            { NodeType::Symbol, "SYMBOL" },
-            { NodeType::Sum, "SUM" },
-            { NodeType::Product, "PRODUCT" },
-            { NodeType::Power, "POWER" },
-            { NodeType::Expr, "EXPR" }
+            { NodeType::Num, "Num" },
+            { NodeType::Symbol, "Symbol" },
+            { NodeType::Sum, "Sum" },
+            { NodeType::Product, "Product" },
+            { NodeType::Power, "Power" },
+            { NodeType::Expr, "Expr" }
         };
     };
 
@@ -55,77 +44,33 @@ namespace sparrow_math::internal::parsing_utils {
     public:
         double Num;
 
-        NumNode(double num) : Node(), Num(num) {}
+        NumNode(double num) : Node(NodeType::Num), Num(num) {}
 
-        NodeType Type() const override {
-            return NodeType::Num;
-        }
-
-        Node* GetChildAt(size_t index) const override {
-            return nullptr;
-        }
-
-        Node* LastChild() const override {
-            return nullptr;
-        }
-
-        void AppendChild(std::unique_ptr<Node> node) override {
-            throw std::runtime_error("Cannot append a child node to `NumNode`");
-        }
-
-        std::unique_ptr<Node> RemoveLastChild() override {
-            throw std::runtime_error("Cannot remove a child node to `NumNode`");
-        }
-
-        std::string DebugToString() const override {
-            return std::format("{}({})", _nodeTypeMap[NodeType::Num], Num);
-        }
+        std::string DebugToString() const override;
     };
 
     class BranchNode : public Node {
     public:
-        BranchNode(NodeType type) : Node(), _type(type) {}
+        BranchNode(NodeType type) : Node(type) {}
 
-        NodeType Type() const override {
-            return _type;
-        }
+        virtual ~BranchNode() = default;
 
-        Node* GetChildAt(size_t index) const override {
-            return _children.at(index).get();
-        }
+        Node* GetChildAt(size_t index) const;
 
-        Node* LastChild() const override {
-            return GetChildAt(_children.size() - 1);
-        }
+        Node* LastChild() const;
 
-        void AppendChild(std::unique_ptr<Node> node) override;
+        void AppendChild(std::unique_ptr<Node> node);
 
-        std::unique_ptr<Node> RemoveLastChild() override;
-
-        // BranchNode* FindGroupingAncestor() const;
+        std::unique_ptr<Node> RemoveLastChild();
 
         BranchNode* FindAncestorOfType(const NodeType& type, const bool& stayWithinDels) const;
 
         BranchNode* FindAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels);
 
-        void InsertParentBetweenSelfAndLastChild(std::unique_ptr<BranchNode> parent);
+        BranchNode* FindGroupingAncestorOrSelf();
 
-        std::string DebugToString() const override {
-            std::string name = _nodeTypeMap[Type()];
-            std::string childrenStr;
-
-            for (size_t i = 0; i < _children.size(); ++i) {
-                if (i) {
-                    childrenStr += ", ";
-                }
-
-                childrenStr += _children.at(i)->DebugToString();
-            }
-
-            return std::format("{}({})", name, childrenStr);
-        }
+        std::string DebugToString() const override;
     private:
-        NodeType _type;
         std::vector<std::unique_ptr<Node>> _children;
     };
 

@@ -1,4 +1,3 @@
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -27,7 +26,7 @@ namespace sparrow_math::internal::parsing_utils {
             EscapedRightCurlyBracket,
             LeftAngleBracket,
             RightAngleBracket,
-            Unknown
+            Null
         };
 
         TokenType Type;
@@ -35,7 +34,7 @@ namespace sparrow_math::internal::parsing_utils {
 
         Token(TokenType type, std::string value = "") : Type(type), Value(value) {}
 
-        std::string ToString() const;
+        std::string DebugToString() const;
     };
 
     class TokenBuilder {
@@ -55,7 +54,7 @@ namespace sparrow_math::internal::parsing_utils {
         bool HasUnfinishedToken() const;
     private:
         std::string _tokenContents;
-        Token::TokenType _tokenType = Token::TokenType::Unknown;
+        Token::TokenType _tokenType = Token::TokenType::Null;
 
         bool _hasDotBeenFound = false;
         bool _hasBackslashBeenFound = false;

@@ -6,7 +6,7 @@
 #include "../str_utils.hpp"
 
 namespace sparrow_math::internal::parsing_utils {
-    std::string Token::ToString() const {
+    std::string Token::DebugToString() const {
         std::string type;
 
         switch (Type) {
@@ -70,8 +70,11 @@ namespace sparrow_math::internal::parsing_utils {
             case TokenType::RightAngleBracket:
                 type = "RightAngleBracket";
                 break;
+            case TokenType::Null:
+                type = "Null";
+                break;
             default:
-                throw std::runtime_error("Unknown `TokenType` option");
+                type = "Token[" + std::to_string((int)Type) + "]";
         }
 
         return type + "(" + Value + ")";
@@ -205,7 +208,7 @@ namespace sparrow_math::internal::parsing_utils {
     }
 
     Token TokenBuilder::FinishToken() {
-        Token token(Token::TokenType::Unknown);
+        Token token(Token::TokenType::Null);
 
         if (_tokenMustBeSymbol) {
             token.Type = Token::TokenType::Symbol;
@@ -293,7 +296,7 @@ namespace sparrow_math::internal::parsing_utils {
     void TokenBuilder::ClearBuilder() {
         _tokenContents.clear();
         ErrorMessage.clear();
-        Token::TokenType _tokenType = Token::TokenType::Unknown;
+        _tokenType = Token::TokenType::Null;
 
         _tokenMustBeNum = false;
         _tokenMustBeSymbol = false;

@@ -57,17 +57,17 @@ namespace sparrow_math::internal::parsing_utils {
 
         Node* GetChildAt(size_t index) const;
 
-        Node* LastChild() const;
+        Node* GetLastChild() const;
 
         void AppendChild(std::unique_ptr<Node> node);
 
         std::unique_ptr<Node> RemoveLastChild();
 
-        BranchNode* FindAncestorOfType(const NodeType& type, const bool& stayWithinDels) const;
+        BranchNode* GetNearestAncestorOfType(const NodeType& type, const bool& stayWithinDels) const;
 
-        BranchNode* FindAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels);
+        BranchNode* GetAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels);
 
-        BranchNode* FindGroupingAncestorOrSelf();
+        BranchNode* GetNearestGroupingAncestorOrSelf();
 
         std::string DebugToString() const override;
     private:

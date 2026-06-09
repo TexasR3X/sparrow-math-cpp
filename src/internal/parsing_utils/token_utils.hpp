@@ -51,7 +51,7 @@ namespace sparrow_math::internal::parsing_utils {
 
         std::string ErrorMessage;
 
-        bool HasUnfinishedToken() const;
+        bool SeeIfHasUnfinishedToken() const;
     private:
         std::string _tokenContents;
         Token::TokenType _tokenType = Token::TokenType::Null;

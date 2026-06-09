@@ -56,7 +56,7 @@ namespace sparrow_math::internal::parsing_utils {
         return _children.at(index).get();
     }
 
-    Node* BranchNode::LastChild() const {
+    Node* BranchNode::GetLastChild() const {
         return _children.back().get();
     }
 
@@ -78,7 +78,7 @@ namespace sparrow_math::internal::parsing_utils {
         return std::move(lastChild);
     }
 
-    BranchNode* BranchNode::FindAncestorOfType(const NodeType& type, const bool& stayWithinDels) const {
+    BranchNode* BranchNode::GetNearestAncestorOfType(const NodeType& type, const bool& stayWithinDels) const {
         if (!Parent || (stayWithinDels && Parent->Type == NodeType::DelimiterGrouping && type != NodeType::DelimiterGrouping)) {
             return nullptr;
         }
@@ -86,15 +86,15 @@ namespace sparrow_math::internal::parsing_utils {
             return Parent;
         }
         else {
-            return Parent->FindAncestorOfType(type, stayWithinDels);
+            return Parent->GetNearestAncestorOfType(type, stayWithinDels);
         }
     }
 
-    BranchNode* BranchNode::FindAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels) {
-        return Type == type ? this : FindAncestorOfType(type, stayWithinDels);
+    BranchNode* BranchNode::GetAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels) {
+        return Type == type ? this : GetNearestAncestorOfType(type, stayWithinDels);
     }
 
-    BranchNode* BranchNode::FindGroupingAncestorOrSelf() {
+    BranchNode* BranchNode::GetNearestGroupingAncestorOrSelf() {
         if (Type == NodeType::Expr || Type == NodeType::DelimiterGrouping) {
             return this;
         }
@@ -102,7 +102,7 @@ namespace sparrow_math::internal::parsing_utils {
             throw std::runtime_error("Code that shouldn't be reached; Node has no grouping ancestor");
         }
         else {
-            return Parent->FindGroupingAncestorOrSelf();
+            return Parent->GetNearestGroupingAncestorOrSelf();
         }
     }
 
@@ -143,7 +143,7 @@ namespace sparrow_math::internal::parsing_utils {
                 focus->AppendChild(std::move(numNode));
             }
             else if ((int)currentNodeType < (int)focus->Type) {
-                if (auto ancestor = focus->FindAncestorOfType(currentNodeType, true)) {
+                if (auto ancestor = focus->GetNearestAncestorOfType(currentNodeType, true)) {
                     // Move the focus to the ancestor of type `currentNodeType`
                     focus = ancestor;
 
@@ -155,7 +155,7 @@ namespace sparrow_math::internal::parsing_utils {
                     auto currentNode = std::make_unique<BranchNode>(currentNodeType);
 
                     // Move the focus to the ancestor
-                    focus = focus->FindGroupingAncestorOrSelf();
+                    focus = focus->GetNearestGroupingAncestorOrSelf();
 
                     // Insert the current node between the focus and the focus's last child
                     // Then move the focus to the current node

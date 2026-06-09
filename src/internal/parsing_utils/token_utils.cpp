@@ -289,7 +289,7 @@ namespace sparrow_math::internal::parsing_utils {
         return token;
     }
 
-    bool TokenBuilder::HasUnfinishedToken() const {
+    bool TokenBuilder::SeeIfHasUnfinishedToken() const {
         return !_tokenContents.empty();
     }
 
@@ -339,7 +339,7 @@ namespace sparrow_math::internal::parsing_utils {
             // Throw an error if an infinite loop occurs
             throw std::runtime_error("Infinite loop occurred during tokenization of the LaTeX");
         }
-        else if (builder.HasUnfinishedToken()) {
+        else if (builder.SeeIfHasUnfinishedToken()) {
             // If the `builder` isn't finished, try to finish it
             // Throw an exception if it can't be finished
             Token token = builder.FinishToken();

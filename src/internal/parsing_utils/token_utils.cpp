@@ -80,7 +80,7 @@ namespace sparrow_math::internal::parsing_utils {
         return type + "(" + Value + ")";
     }
 
-    TokenBuilder::AppendingResult TokenBuilder::AppendToToken(const char& ch) {
+    TokenBuilder::AppendingResult TokenBuilder::AppendToToken(char ch) {
         if (_tokenMustBeNum) {
             if (IsCharNumeric(ch)) {
                 _tokenContents += ch;
@@ -289,7 +289,7 @@ namespace sparrow_math::internal::parsing_utils {
         return token;
     }
 
-    bool TokenBuilder::SeeIfHasUnfinishedToken() const {
+    bool TokenBuilder::SeeIfBuilderHasUnfinishedToken() const {
         return !_tokenContents.empty();
     }
 
@@ -304,7 +304,7 @@ namespace sparrow_math::internal::parsing_utils {
         _hasBackslashBeenFound = false;
     }
 
-    std::vector<Token> TokenizeLatex(std::string latex) {
+    std::vector<Token> TokenizeLatex(const std::string& latex) {
         std::vector<Token> tokens;
         TokenBuilder builder;
 
@@ -339,7 +339,7 @@ namespace sparrow_math::internal::parsing_utils {
             // Throw an error if an infinite loop occurs
             throw std::runtime_error("Infinite loop occurred during tokenization of the LaTeX");
         }
-        else if (builder.SeeIfHasUnfinishedToken()) {
+        else if (builder.SeeIfBuilderHasUnfinishedToken()) {
             // If the `builder` isn't finished, try to finish it
             // Throw an exception if it can't be finished
             Token token = builder.FinishToken();

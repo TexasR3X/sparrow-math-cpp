@@ -46,12 +46,12 @@ namespace sparrow_math::internal::parsing_utils {
             ErrorFound
         };
 
-        AppendingResult AppendToToken(const char& ch);
+        AppendingResult AppendToToken(char ch);
         Token FinishToken();
 
         std::string ErrorMessage;
 
-        bool SeeIfHasUnfinishedToken() const;
+        bool SeeIfBuilderHasUnfinishedToken() const;
     private:
         std::string _tokenContents;
         Token::TokenType _tokenType = Token::TokenType::Null;
@@ -66,5 +66,5 @@ namespace sparrow_math::internal::parsing_utils {
         void ClearBuilder();
     };
 
-    std::vector<Token> TokenizeLatex(std::string latex);
+    std::vector<Token> TokenizeLatex(const std::string& latex);
 }

@@ -23,8 +23,8 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    // Create a new node inbetween the focus and its last child. Then move focus
-    // to the new node (reassign `focus` to store the address of the new node).
+    // Create a new node inbetween the focus and its last child. Then move the focus to
+    // the new node (reassign the variable `focus` to store the address of the new node).
     void InsertNodeBetweenFocusAndLastChildThenMoveFocus(BranchNode*& focus, Node::NodeType nodeType) {
         // Create the new node
         auto newNode = std::make_unique<BranchNode>(nodeType);
@@ -153,8 +153,6 @@ namespace sparrow_math::internal::parsing_utils {
             else if ((int)currentNodeType < (int)focus->Type) {
                 if (auto ancestor = focus->GetNearestAncestorOfType(currentNodeType, true)) {
                     // Move the focus to the ancestor of type `currentNodeType`
-                        // NOTE: The ancestor is the current node. For this reason,
-                        // we don't need to create another node for the current token.
                     focus = ancestor;
                 }
                 else {

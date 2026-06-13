@@ -63,9 +63,9 @@ namespace sparrow_math::internal::parsing_utils {
 
         std::unique_ptr<Node> RemoveLastChild();
 
-        BranchNode* GetNearestAncestorOfType(const NodeType& type, const bool& stayWithinDels) const;
+        BranchNode* GetNearestAncestorOfType(NodeType type, bool stayWithinDels) const;
 
-        BranchNode* GetAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels);
+        BranchNode* GetAncestorOrSelfOfType(NodeType type, bool stayWithinDels);
 
         BranchNode* GetNearestGroupingAncestorOrSelf();
 

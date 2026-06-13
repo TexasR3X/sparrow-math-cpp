@@ -8,7 +8,7 @@
 namespace sparrow_math::internal::parsing_utils {
     // ========== Local Functions ========== //
 
-    Node::NodeType MapTokenTypeToNodeType(const Token::TokenType& tokenType) {
+    Node::NodeType MapTokenTypeToNodeType(Token::TokenType tokenType) {
         switch (tokenType) {
             case Token::TokenType::Num:
                 return Node::NodeType::Num;
@@ -83,7 +83,7 @@ namespace sparrow_math::internal::parsing_utils {
         return std::move(lastChild);
     }
 
-    BranchNode* BranchNode::GetNearestAncestorOfType(const NodeType& type, const bool& stayWithinDels) const {
+    BranchNode* BranchNode::GetNearestAncestorOfType(NodeType type, bool stayWithinDels) const {
         if (!Parent || (stayWithinDels && Parent->Type == NodeType::DelimiterGrouping && type != NodeType::DelimiterGrouping)) {
             return nullptr;
         }
@@ -95,7 +95,7 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    BranchNode* BranchNode::GetAncestorOrSelfOfType(const NodeType& type, const bool& stayWithinDels) {
+    BranchNode* BranchNode::GetAncestorOrSelfOfType(NodeType type, bool stayWithinDels) {
         return Type == type ? this : GetNearestAncestorOfType(type, stayWithinDels);
     }
 

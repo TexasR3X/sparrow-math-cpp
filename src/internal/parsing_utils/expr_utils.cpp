@@ -23,7 +23,12 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    void InsertNodeBetweenFocusAndLastChildThenMoveFocus(BranchNode*& focus, std::unique_ptr<BranchNode> newNode) {
+    // Create a new node inbetween the focus and its last child. Then move focus
+    // to the new node (reassign `focus` to store the address of the new node).
+    void InsertNodeBetweenFocusAndLastChildThenMoveFocus(BranchNode*& focus, Node::NodeType nodeType) {
+        // Create the new node
+        auto newNode = std::make_unique<BranchNode>(nodeType);
+
         // Save the address of the new node as a raw pointer
         auto newNodeRawPtr = newNode.get();
 
@@ -36,7 +41,7 @@ namespace sparrow_math::internal::parsing_utils {
         // Append the new node to the focus
         focus->AppendChild(std::move(newNode));
 
-        // Move focus on the new node
+        // Move the focus to the new node
         focus = newNodeRawPtr;
     }
 
@@ -132,7 +137,7 @@ namespace sparrow_math::internal::parsing_utils {
         for (const auto& currentToken : tokens) {
             auto currentNodeType = MapTokenTypeToNodeType(currentToken.Type);
 
-            if (currentToken.Type == Token::TokenType::Num) {
+            if (currentNodeType == Node::NodeType::Num) {
                 // Turn the token's string value into a number
                 auto num = std::stod(currentToken.Value);
 
@@ -142,33 +147,22 @@ namespace sparrow_math::internal::parsing_utils {
                 // Append `numNode` to the focus
                 focus->AppendChild(std::move(numNode));
             }
+            else if ((int)currentNodeType > (int)focus->Type) {
+                InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, currentNodeType);
+            }
             else if ((int)currentNodeType < (int)focus->Type) {
                 if (auto ancestor = focus->GetNearestAncestorOfType(currentNodeType, true)) {
                     // Move the focus to the ancestor of type `currentNodeType`
+                        // NOTE: The ancestor is the current node. For this reason,
+                        // we don't need to create another node for the current token.
                     focus = ancestor;
-
-                    // NOTE: The ancestor is the current node
-                    // NOTE: We don't need to create another node for the current token
                 }
                 else {
-                    // Create the current node for the current token
-                    auto currentNode = std::make_unique<BranchNode>(currentNodeType);
-
                     // Move the focus to the ancestor
                     focus = focus->GetNearestGroupingAncestorOrSelf();
 
-                    // Insert the current node between the focus and the focus's last child
-                    // Then move the focus to the current node
-                    InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, std::move(currentNode));
+                    InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, currentNodeType);
                 }
-            }
-            else if ((int)currentNodeType > (int)focus->Type) {
-                // Create the current node for the current token
-                auto currentNode = std::make_unique<BranchNode>(currentNodeType);
-
-                // Insert the current node between the focus and the focus's last child
-                // Then move the focus to the current node
-                InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, std::move(currentNode));
             }
 
             std::cout << "currentToken: " << currentToken.DebugToString() << std::endl;

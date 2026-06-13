@@ -19,7 +19,7 @@ namespace sparrow_math::internal {
         std::string trimmedName;
         IterationPhase iterationPhase = IterationPhase::FoundNothingOrLeadingWhitespace;
 
-        for (const auto ch : name) {
+        for (auto ch : name) {
             switch (iterationPhase) {
                 case IterationPhase::FoundNothingOrLeadingWhitespace:
                     if (IsCharWhitespace(ch)) {

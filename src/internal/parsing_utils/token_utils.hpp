@@ -42,15 +42,12 @@ namespace sparrow_math::internal::parsing_utils {
         enum class AppendingResult {
             StillWorking,
             ReadyToFinishWithLastChar,
-            ReadyToFinishWithoutLastChar,
-            ErrorFound
+            ReadyToFinishWithoutLastChar
         };
 
         AppendingResult AppendToToken(char ch);
 
         Token FinishToken();
-
-        std::string ErrorMessage;
 
         bool SeeIfBuilderHasUnfinishedToken() const;
     private:

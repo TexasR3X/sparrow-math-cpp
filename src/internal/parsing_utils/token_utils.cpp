@@ -89,8 +89,7 @@ namespace sparrow_math::internal::parsing_utils {
             else if (ch == '.') {
                 // See if a decimal point has already been found
                 if (_hasDotBeenFound) {
-                    ErrorMessage = "A number cannot have two decimal points";
-                    return AppendingResult::ErrorFound;
+                    throw std::runtime_error("A number cannot have two decimal points");
                 }
                 else {
                     _hasDotBeenFound = true;
@@ -118,8 +117,7 @@ namespace sparrow_math::internal::parsing_utils {
                 return AppendingResult::StillWorking;
             }
             else if (IsCharNumeric(ch)) {
-                ErrorMessage = "A LaTeX command cannot start with a number";
-                return AppendingResult::ErrorFound;
+                throw std::runtime_error("A LaTeX command cannot start with a number");
             }
             else if (IsCharWhitespace(ch)) {
                 ClearBuilder();
@@ -141,8 +139,7 @@ namespace sparrow_math::internal::parsing_utils {
 
                         return AppendingResult::ReadyToFinishWithLastChar;
                     default:
-                        ErrorMessage = std::format("Invalid character ({}) infront of \\", ch);
-                        return AppendingResult::ErrorFound;
+                        throw std::runtime_error(std::format("Invalid character ({}) infront of \\", ch));
                 }
             }
         }
@@ -200,8 +197,7 @@ namespace sparrow_math::internal::parsing_utils {
                         _tokenContents += ch;
                         return AppendingResult::ReadyToFinishWithLastChar;
                     default:
-                        ErrorMessage = std::format("Invalid character ({}) in LaTeX", ch);
-                        return AppendingResult::ErrorFound;
+                        throw std::runtime_error(std::format("Invalid character ({}) in LaTeX", ch));
                 }
             }
         }
@@ -295,7 +291,6 @@ namespace sparrow_math::internal::parsing_utils {
 
     void TokenBuilder::ClearBuilder() {
         _tokenContents.clear();
-        ErrorMessage.clear();
         _tokenType = Token::TokenType::Null;
 
         _tokenMustBeNum = false;
@@ -325,10 +320,6 @@ namespace sparrow_math::internal::parsing_utils {
                     tokens.emplace_back(token);
                     break;
                 }
-                case TokenBuilder::AppendingResult::ErrorFound:
-                    throw std::runtime_error(builder.ErrorMessage);
-                default:
-                    throw std::runtime_error("Unknown `AppendingResult` option");
             }
 
             ++loopCount;

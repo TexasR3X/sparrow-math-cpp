@@ -47,6 +47,7 @@ namespace sparrow_math::internal::parsing_utils {
         };
 
         AppendingResult AppendToToken(char ch);
+
         Token FinishToken();
 
         std::string ErrorMessage;
@@ -66,5 +67,5 @@ namespace sparrow_math::internal::parsing_utils {
         void ClearBuilder();
     };
 
-    std::vector<Token> TokenizeLatex(const std::string& latex);
+    std::vector<Token> TokenizeLatex(std::string_view latex);
 }

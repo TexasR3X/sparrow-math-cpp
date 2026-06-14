@@ -304,7 +304,7 @@ namespace sparrow_math::internal::parsing_utils {
         _hasBackslashBeenFound = false;
     }
 
-    std::vector<Token> TokenizeLatex(const std::string& latex) {
+    std::vector<Token> TokenizeLatex(std::string_view latex) {
         std::vector<Token> tokens;
         TokenBuilder builder;
 
@@ -313,7 +313,6 @@ namespace sparrow_math::internal::parsing_utils {
 
         for (auto i = 0UL; i < latex.length() && loopCount < maxLoopCount; ++i) {
             auto ch = latex.at(i);
-
             auto result = builder.AppendToToken(ch);
 
             switch (result) {

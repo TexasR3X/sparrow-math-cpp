@@ -101,7 +101,7 @@ enum class Result {
 }
 ```
 
-## Development Tool:
+## Development Tool
 For those who are developing this library, the `dev.sh` file can be used to build, rebuild, and run the project's unit tests. It's ran using the following syntax:
 ```
 ./dev.sh <option>

@@ -6,7 +6,7 @@ set -e
 # Declare helper functions
 install_conan_deps() {
     echo "~~~~~~~~~~ Installing Conan dependencies ~~~~~~~~~~"
-    conan install .. --build=missing
+    conan install .. --update --build=missing
 }
 config_cmake_and_conan() {
     echo "~~~~~~~~~~ Configuring CMake and Conan toolchain ~~~~~~~~~~"

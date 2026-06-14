@@ -308,13 +308,13 @@ namespace sparrow_math::internal::parsing_utils {
         std::vector<Token> tokens;
         TokenBuilder builder;
 
-        int loopCount = 0;
-        constexpr int maxLoopCount = 2000000;
+        auto loopCount = 0;
+        constexpr auto maxLoopCount = 2000000;
 
-        for (int i = 0; i < latex.length() && loopCount < maxLoopCount; ++i) {
-            char ch = latex.at(i);
+        for (auto i = 0UL; i < latex.length() && loopCount < maxLoopCount; ++i) {
+            auto ch = latex.at(i);
 
-            TokenBuilder::AppendingResult result = builder.AppendToToken(ch);
+            auto result = builder.AppendToToken(ch);
 
             switch (result) {
                 case TokenBuilder::AppendingResult::StillWorking:
@@ -322,7 +322,7 @@ namespace sparrow_math::internal::parsing_utils {
                 case TokenBuilder::AppendingResult::ReadyToFinishWithoutLastChar:
                     --i;
                 case TokenBuilder::AppendingResult::ReadyToFinishWithLastChar: {
-                    Token token = builder.FinishToken();
+                    auto token = builder.FinishToken();
                     tokens.emplace_back(token);
                     break;
                 }
@@ -342,7 +342,7 @@ namespace sparrow_math::internal::parsing_utils {
         else if (builder.SeeIfBuilderHasUnfinishedToken()) {
             // If the `builder` isn't finished, try to finish it
             // Throw an exception if it can't be finished
-            Token token = builder.FinishToken();
+            auto token = builder.FinishToken();
             tokens.emplace_back(token);
         }
 

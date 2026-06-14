@@ -95,7 +95,7 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    BranchNode* BranchNode::GetAncestorOrSelfOfType(NodeType type, bool stayWithinDels) {
+    BranchNode* BranchNode::GetNearestAncestorOrSelfOfType(NodeType type, bool stayWithinDels) {
         return Type == type ? this : GetNearestAncestorOfType(type, stayWithinDels);
     }
 

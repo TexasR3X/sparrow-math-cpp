@@ -65,7 +65,7 @@ namespace sparrow_math::internal::parsing_utils {
 
         BranchNode* GetNearestAncestorOfType(NodeType type, bool stayWithinDels) const;
 
-        BranchNode* GetAncestorOrSelfOfType(NodeType type, bool stayWithinDels);
+        BranchNode* GetNearestAncestorOrSelfOfType(NodeType type, bool stayWithinDels);
 
         BranchNode* GetNearestGroupingAncestorOrSelf();
 

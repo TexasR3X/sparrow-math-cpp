@@ -41,25 +41,27 @@ namespace sparrow_math::internal::parsing_utils {
     public:
         enum class AppendingResult {
             StillWorking,
-            ReadyToFinishWithLastChar,
-            ReadyToFinishWithoutLastChar
+            FinishedToken
         };
 
         AppendingResult AppendToToken(char ch);
 
-        Token FinishToken();
+        std::vector<Token> GetTokens();
 
-        bool SeeIfBuilderHasUnfinishedToken() const;
+        void DebugPrint();
     private:
-        std::string _tokenContents;
-        Token::TokenType _tokenType = Token::TokenType::Null;
+        std::vector<Token> _tokens;
 
-        bool _hasDotBeenFound = false;
-        bool _hasBackslashBeenFound = false;
+        std::string _curTokenContents;
 
-        bool _tokenMustBeSymbol = false;
-        bool _tokenMustBeNum = false;
-        bool _tokenMustBeOperator = false;
+        bool _hasDotBeenFoundOnCurToken = false;
+        bool _hasBackslashBeenFoundOnCurToken = false;
+
+        bool _curTokenMustBeSymbol = false;
+        bool _curTokenMustBeNum = false;
+        bool _curTokenMustBeOperator = false;
+
+        void FinishToken();
 
         void ClearBuilder();
     };

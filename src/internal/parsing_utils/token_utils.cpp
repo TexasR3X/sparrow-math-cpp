@@ -1,4 +1,5 @@
 #include <format>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -81,39 +82,50 @@ namespace sparrow_math::internal::parsing_utils {
     }
 
     TokenBuilder::AppendingResult TokenBuilder::AppendToToken(char ch) {
-        if (_tokenMustBeNum) {
+        std::cout << "ch: " << ch << std::endl;
+        std::cout << std::endl;
+        DebugPrint();
+        std::cout << std::endl;
+
+        if (_curTokenMustBeNum) {
             if (IsCharNumeric(ch)) {
-                _tokenContents += ch;
+                _curTokenContents += ch;
                 return AppendingResult::StillWorking;
             }
             else if (ch == '.') {
                 // See if a decimal point has already been found
-                if (_hasDotBeenFound) {
+                if (_hasDotBeenFoundOnCurToken) {
                     throw std::runtime_error("A number cannot have two decimal points");
                 }
                 else {
-                    _hasDotBeenFound = true;
-                    _tokenContents += ch;
+                    _hasDotBeenFoundOnCurToken = true;
+                    _curTokenContents += ch;
                     return AppendingResult::StillWorking;
                 }
             }
             else {
-                return AppendingResult::ReadyToFinishWithoutLastChar;
+                FinishToken();
+                std::cout << "CALL `AppendToToken()` INSIDE `AppendToToken()`" << std::endl;
+                AppendToToken(ch);
+                return AppendingResult::FinishedToken;
             }
         }
-        else if (_tokenMustBeSymbol) {
+        else if (_curTokenMustBeSymbol) {
             if (IsCharAlphabetical(ch)) {
-                _tokenContents += ch;
+                _curTokenContents += ch;
                 return AppendingResult::StillWorking;
             }
             else {
-                return AppendingResult::ReadyToFinishWithoutLastChar;
+                FinishToken();
+                std::cout << "CALL `AppendToToken()` INSIDE `AppendToToken()`" << std::endl;
+                AppendToToken(ch);
+                return AppendingResult::FinishedToken;
             }
         }
-        else if (_hasBackslashBeenFound) {
+        else if (_hasBackslashBeenFoundOnCurToken) {
             if (IsCharAlphabetical(ch)) {
-                _tokenMustBeSymbol = true;
-                _tokenContents += ch;
+                _curTokenMustBeSymbol = true;
+                _curTokenContents += ch;
                 return AppendingResult::StillWorking;
             }
             else if (IsCharNumeric(ch)) {
@@ -129,50 +141,46 @@ namespace sparrow_math::internal::parsing_utils {
                     case ':':
                     case ';':
                     case '!':
-                        ClearBuilder();
+                        FinishToken();
                         return AppendingResult::StillWorking;
                     case '\\':
                     case '{':
                     case '}':
-                        _tokenMustBeOperator = true;
-                        _tokenContents += ch;
+                        _curTokenMustBeOperator = true;
+                        _curTokenContents += ch;
 
-                        return AppendingResult::ReadyToFinishWithLastChar;
+                        FinishToken();
+                        return AppendingResult::FinishedToken;
                     default:
                         throw std::runtime_error(std::format("Invalid character ({}) infront of \\", ch));
                 }
             }
         }
         else {
-            if (IsCharWhitespace(ch)) {
-                if (_tokenContents.empty()) {
-                    // Don't append the last space character to the working token
-                    return AppendingResult::StillWorking;
-                }
-                else {
-                    // Don't append the last space character, but still return `ReadyToFinishWithLastChar` so the space is skipped
-                    return AppendingResult::ReadyToFinishWithLastChar;
-                }
+            if (IsCharWhitespace(ch) && _curTokenContents.empty()) {
+                // Don't append the last space character to the working token
+                return AppendingResult::StillWorking;
             }
             else if (ch == '\\') {
-                _hasBackslashBeenFound = true;
-                _tokenContents += ch;
+                _hasBackslashBeenFoundOnCurToken = true;
+                _curTokenContents += ch;
                 return AppendingResult::StillWorking;
             }
             else if (ch == '.') {
-                _tokenMustBeNum = true;
-                _hasDotBeenFound = true;
-                _tokenContents += ch;
+                _curTokenMustBeNum = true;
+                _hasDotBeenFoundOnCurToken = true;
+                _curTokenContents += ch;
                 return AppendingResult::StillWorking;
             }
             else if (IsCharAlphabetical(ch)) {
-                _tokenMustBeSymbol = true;
-                _tokenContents += ch;
-                return AppendingResult::ReadyToFinishWithLastChar;
+                _curTokenMustBeSymbol = true;
+                _curTokenContents += ch;
+                FinishToken();
+                return AppendingResult::FinishedToken;
             }
             else if (IsCharNumeric(ch)) {
-                _tokenMustBeNum = true;
-                _tokenContents += ch;
+                _curTokenMustBeNum = true;
+                _curTokenContents += ch;
                 return AppendingResult::StillWorking;
             }
             else {
@@ -193,9 +201,10 @@ namespace sparrow_math::internal::parsing_utils {
                     case '}':
                     case '<':
                     case '>':
-                        _tokenMustBeOperator = true;
-                        _tokenContents += ch;
-                        return AppendingResult::ReadyToFinishWithLastChar;
+                        _curTokenMustBeOperator = true;
+                        _curTokenContents += ch;
+                        FinishToken();
+                        return AppendingResult::FinishedToken;
                     default:
                         throw std::runtime_error(std::format("Invalid character ({}) in LaTeX", ch));
                 }
@@ -203,73 +212,83 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    Token TokenBuilder::FinishToken() {
+    std::vector<Token> TokenBuilder::GetTokens() {
+        if (!_curTokenContents.empty()) {
+            FinishToken();
+        }
+
+        return _tokens;
+    }
+
+    void TokenBuilder::FinishToken() {
+        std::cout << "FINISH TOKEN!" << std::endl;
+
         Token token(Token::TokenType::Null);
 
-        if (_tokenMustBeSymbol) {
+        if (_curTokenMustBeSymbol) {
             token.Type = Token::TokenType::Symbol;
-            token.Value = _tokenContents;
+            token.Value = _curTokenContents;
         }
-        else if (_tokenMustBeNum) {
+        else if (_curTokenMustBeNum) {
             token.Type = Token::TokenType::Num;
-            token.Value = _tokenContents;
+            token.Value = _curTokenContents;
         }
-        else if (_tokenMustBeOperator) {
-            if (_tokenContents == "+") {
+        else if (_curTokenMustBeOperator) {
+            if (_curTokenContents == "+") {
                 token.Type = Token::TokenType::Plus;
             }
-            else if (_tokenContents == "-") {
+            else if (_curTokenContents == "-") {
                 token.Type = Token::TokenType::Minus;
             }
-            else if (_tokenContents == "*") {
+            else if (_curTokenContents == "*") {
                 token.Type = Token::TokenType::Star;
             }
-            else if (_tokenContents == "/") {
+            else if (_curTokenContents == "/") {
                 token.Type = Token::TokenType::ForwardSlash;
             }
-            else if (_tokenContents == "_") {
+            else if (_curTokenContents == "_") {
                 token.Type = Token::TokenType::Underscore;
             }
-            else if (_tokenContents == "^") {
+            else if (_curTokenContents == "^") {
                 token.Type = Token::TokenType::UpArrow;
             }
-            else if (_tokenContents == "&") {
+            else if (_curTokenContents == "&") {
                 token.Type = Token::TokenType::Ampersand;
             }
-            else if (_tokenContents == "=") {
+            else if (_curTokenContents == "=") {
                 token.Type = Token::TokenType::EqualSign;
             }
-            else if (_tokenContents == "\\\\") {
+            else if (_curTokenContents == "\\\\") {
                 token.Type = Token::TokenType::LineBreak;
             }
-            else if (_tokenContents == "(") {
+            else if (_curTokenContents == "(") {
                 token.Type = Token::TokenType::LeftParenthesis;
             }
-            else if (_tokenContents == ")") {
+            else if (_curTokenContents == ")") {
                 token.Type = Token::TokenType::RightParenthesis;
             }
-            else if (_tokenContents == "[") {
+            else if (_curTokenContents == "[") {
                 token.Type = Token::TokenType::LeftSquareBracket;
             }
-            else if (_tokenContents == "]") {
+            else if (_curTokenContents == "]") {
                 token.Type = Token::TokenType::RightSquareBracket;
             }
-            else if (_tokenContents == "{") {
+            else if (_curTokenContents == "{") {
                 token.Type = Token::TokenType::LeftCurlyBracket;
             }
-            else if (_tokenContents == "}") {
+            else if (_curTokenContents == "}") {
                 token.Type = Token::TokenType::RightCurlyBracket;
             }
-            else if (_tokenContents == "\\{") {
+            else if (_curTokenContents == "\\{") {
                 token.Type = Token::TokenType::EscapedLeftCurlyBracket;
             }
-            else if (_tokenContents == "\\}") {
+            else if (_curTokenContents == "\\}") {
                 token.Type = Token::TokenType::EscapedRightCurlyBracket;
             }
-            else if (_tokenContents == "<") {
+            else if (_curTokenContents == "<") {
                 token.Type = Token::TokenType::LeftAngleBracket;
             }
-            else if (_tokenContents == ">") {
+            else if (_curTokenContents == ">") {
                 token.Type = Token::TokenType::RightAngleBracket;
             }
             else {
@@ -280,62 +299,45 @@ namespace sparrow_math::internal::parsing_utils {
             throw std::runtime_error("Token not found");
         }
 
-        ClearBuilder();
+        _tokens.push_back(token);
 
-        return token;
+        ClearBuilder();
     }
 
-    bool TokenBuilder::SeeIfBuilderHasUnfinishedToken() const {
-        return !_tokenContents.empty();
+    void TokenBuilder::DebugPrint() {
+        std::cout << "TOKEN BUILDER:" << std::endl;
+
+        std::cout << "_curTokenContents: " << _curTokenContents << std::endl;
+        std::cout << "_curTokenMustBeNum: " << _curTokenMustBeNum << std::endl;
+        std::cout << "_curTokenMustBeSymbol: " << _curTokenMustBeSymbol << std::endl;
+        std::cout << "_hasDotBeenFoundOnCurToken: " << _hasDotBeenFoundOnCurToken << std::endl;
+        std::cout << "_hasBackslashBeenFoundOnCurToken: " << _hasBackslashBeenFoundOnCurToken << std::endl;
+        
+        std::cout << "_tokens:" << std::endl;
+        for (const auto& token : _tokens) {
+            std::cout << token.DebugToString() << std::endl;
+        }
+
+        if (!_tokens.size()) {
+            std::cout << std::endl;
+        }
     }
 
     void TokenBuilder::ClearBuilder() {
-        _tokenContents.clear();
-        _tokenType = Token::TokenType::Null;
-
-        _tokenMustBeNum = false;
-        _tokenMustBeSymbol = false;
-        _hasDotBeenFound = false;
-        _hasBackslashBeenFound = false;
+        _curTokenContents.clear();
+        _curTokenMustBeNum = false;
+        _curTokenMustBeSymbol = false;
+        _hasDotBeenFoundOnCurToken = false;
+        _hasBackslashBeenFoundOnCurToken = false;
     }
 
     std::vector<Token> TokenizeLatex(std::string_view latex) {
-        std::vector<Token> tokens;
         TokenBuilder builder;
 
-        auto loopCount = 0;
-        constexpr auto maxLoopCount = 2000000;
-
-        for (auto i = 0UL; i < latex.length() && loopCount < maxLoopCount; ++i) {
-            auto ch = latex.at(i);
-            auto result = builder.AppendToToken(ch);
-
-            switch (result) {
-                case TokenBuilder::AppendingResult::StillWorking:
-                    break;
-                case TokenBuilder::AppendingResult::ReadyToFinishWithoutLastChar:
-                    --i;
-                case TokenBuilder::AppendingResult::ReadyToFinishWithLastChar: {
-                    auto token = builder.FinishToken();
-                    tokens.emplace_back(token);
-                    break;
-                }
-            }
-
-            ++loopCount;
+        for (char ch : latex) {
+            builder.AppendToToken(ch);
         }
 
-        if (loopCount == maxLoopCount) {
-            // Throw an error if an infinite loop occurs
-            throw std::runtime_error("Infinite loop occurred during tokenization of the LaTeX");
-        }
-        else if (builder.SeeIfBuilderHasUnfinishedToken()) {
-            // If the `builder` isn't finished, try to finish it
-            // Throw an exception if it can't be finished
-            auto token = builder.FinishToken();
-            tokens.emplace_back(token);
-        }
-
-        return tokens;
+        return builder.GetTokens();
     }
 }

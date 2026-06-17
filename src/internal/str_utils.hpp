@@ -15,4 +15,29 @@ namespace sparrow_math::internal {
     }
 
     std::string TrimSymbolName(const std::string& name);
+
+    class StrIterator {
+    public:
+        StrIterator(std::string_view str) : _str(str), _lastIndex(str.length() - 1) {}
+
+        char Peak() const {
+            return _str.at(_currentIndex);
+        }
+
+        char Advance() {
+            auto curChar = Peak();
+
+            ++_currentIndex;
+
+            return curChar;
+        }
+
+        bool GetBoolIsNotFinished() const {
+            return _currentIndex <= _lastIndex;
+        }
+    private:
+        size_t _currentIndex = 0;
+        const size_t _lastIndex;
+        const std::string_view _str;
+    };
 }

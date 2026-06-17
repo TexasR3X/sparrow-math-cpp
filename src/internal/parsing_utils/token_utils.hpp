@@ -32,38 +32,9 @@ namespace sparrow_math::internal::parsing_utils {
         TokenType Type;
         std::string Value;
 
-        Token(TokenType type, std::string value = "") : Type(type), Value(value) {}
+        Token(TokenType type = TokenType::Null, std::string value = "") : Type(type), Value(value) {}
 
         std::string DebugToString() const;
-    };
-
-    class TokenBuilder {
-    public:
-        enum class AppendingResult {
-            StillWorking,
-            FinishedToken
-        };
-
-        AppendingResult AppendToToken(char ch);
-
-        std::vector<Token> GetTokens();
-
-        void DebugPrint();
-    private:
-        std::vector<Token> _tokens;
-
-        std::string _curTokenContents;
-
-        bool _hasDotBeenFoundOnCurToken = false;
-        bool _hasBackslashBeenFoundOnCurToken = false;
-
-        bool _curTokenMustBeSymbol = false;
-        bool _curTokenMustBeNum = false;
-        bool _curTokenMustBeOperator = false;
-
-        void FinishToken();
-
-        void ClearBuilder();
     };
 
     std::vector<Token> TokenizeLatex(std::string_view latex);

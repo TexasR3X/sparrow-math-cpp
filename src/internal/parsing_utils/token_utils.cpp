@@ -25,6 +25,9 @@ namespace sparrow_math::internal::parsing_utils {
             case TokenType::Star:
                 type = "Star";
                 break;
+            case TokenType::ForwardSlash:
+                type = "ForwardSlash";
+                break;
             case TokenType::Underscore:
                 type = "Underscore";
                 break;
@@ -73,8 +76,6 @@ namespace sparrow_math::internal::parsing_utils {
             case TokenType::Null:
                 type = "Null";
                 break;
-            default:
-                type = "Token[" + std::to_string((int)Type) + "]";
         }
 
         return type + "(" + Value + ")";

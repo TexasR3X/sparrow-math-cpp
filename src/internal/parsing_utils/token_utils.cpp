@@ -1,6 +1,8 @@
 #include <format>
+#include <iostream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "token_utils.hpp"
 #include "../str_utils.hpp"
@@ -217,5 +219,94 @@ namespace sparrow_math::internal::parsing_utils {
         }
 
         return tokens;
+    }
+
+    void DebugPrintTokens(std::string_view displayName, const std::vector<Token>& tokens, size_t focusedIndex) {
+        std::cout << displayName << ": ";
+
+        if (tokens.empty()) {
+            std::cout << "[EMPTY]" << std::endl;
+        }
+        else {
+            for (size_t i = 0; i < tokens.size(); ++i) {
+                if (i == focusedIndex) {
+                    std::cout << "\033[31m";
+                }
+
+                std::cout << tokens.at(i).DebugToString();
+
+                if (i == focusedIndex) {
+                    std::cout << "\033[0m";
+                }
+
+                if (i == tokens.size() - 1) {
+                    std::cout << std::endl;
+                }
+                else {
+                    std::cout << ", ";
+                }
+            }
+        }
+    }
+
+    void CleanTokens(std::vector<Token>& tokens) {
+        if (!tokens.empty()) {
+            auto& firstTokenType = tokens.at(0).Type;
+
+            if (
+                firstTokenType == Token::TokenType::Star
+                || firstTokenType == Token::TokenType::ForwardSlash
+                || firstTokenType == Token::TokenType::Underscore
+                || firstTokenType == Token::TokenType::UpArrow
+                || firstTokenType == Token::TokenType::Ampersand
+                || firstTokenType == Token::TokenType::EqualSign
+            ) {
+                throw std::runtime_error("A LaTeX cannot start with the given character");
+            }
+            else if (firstTokenType == Token::TokenType::Plus) {
+                tokens.erase(tokens.begin());
+            }
+
+            int count = 0;
+            for (auto it = 1 + tokens.begin(); it != tokens.end() && count < 100; ++it) {
+                std::cout << std::endl;
+                std::cout << "it: " << it->DebugToString() << std::endl;
+                std::cout << "INDEX: " << it - tokens.begin() << std::endl;
+                DebugPrintTokens("TOKENS BEFORE", tokens, it - tokens.begin());
+
+                if ((it - 1)->Type == Token::TokenType::Plus && it->Type == Token::TokenType::Plus) {
+                    it = tokens.erase(it);
+
+                    --it;
+                }
+                else if ((it - 1)->Type == Token::TokenType::Minus && it->Type == Token::TokenType::Plus) {
+                    *(it - 1) = Token(Token::TokenType::Plus);
+
+                    *it = Token(Token::TokenType::Minus);
+                }
+                else if ((it - 1)->Type == Token::TokenType::Minus && it->Type == Token::TokenType::Minus) {
+                    it = tokens.erase(it);
+
+                    --it;
+
+                    *it = Token(Token::TokenType::Plus);
+                }
+                else if (((it - 1)->Type == Token::TokenType::Num || (it - 1)->Type == Token::TokenType::Symbol) && it->Type == Token::TokenType::Minus) {
+                    std::cout << "TEST" << std::endl;
+                    std::cout << "it - 1: " << (it - 1)->DebugToString() << std::endl;
+
+                    it = tokens.insert(it, Token(Token::TokenType::Plus));
+
+                    std::cout << "(in) it: " << it->DebugToString() << std::endl;
+                    std::cout << "(in) INDEX: " << it - tokens.begin() << std::endl;
+
+                    ++it;
+                }
+
+                DebugPrintTokens("TOKENS AFTER", tokens, it - tokens.begin());
+
+                ++count;
+            }
+        }
     }
 }

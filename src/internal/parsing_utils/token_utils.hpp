@@ -38,4 +38,6 @@ namespace sparrow_math::internal::parsing_utils {
     };
 
     std::vector<Token> TokenizeLatex(std::string_view latex);
+
+    void CleanTokens(std::vector<Token>& tokens);
 }

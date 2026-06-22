@@ -25,11 +25,11 @@ namespace sparrow_math::internal {
         }
 
         char Advance() {
-            auto curChar = Peak();
+            auto currentChar = Peak();
 
             ++_currentIndex;
 
-            return curChar;
+            return currentChar;
         }
 
         bool GetBoolIsNotFinished() const {

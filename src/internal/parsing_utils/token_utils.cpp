@@ -249,6 +249,83 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
+    // class TokenIterator {
+    // public:
+    //     TokenIterator(std::vector<Token>& tokens) : _tokens(tokens), _lastIndex(tokens.size() - 1) {}
+
+    //     Token& Peak() {
+    //         return _tokens.at(_currentIndex);
+    //     }
+
+    //     Token& Advance() {
+    //         auto& currentToken = Peak();
+
+    //         ++_currentIndex;
+
+    //         return currentToken;
+    //     }
+
+    //     bool GetBoolIsNotFinished() const {
+    //         return _currentIndex <= _lastIndex;
+    //     }
+    // private:
+    //     size_t _currentIndex = 0;
+    //     const size_t _lastIndex;
+    //     std::vector<Token> _tokens;
+    // };
+
+    void CondensePlusAndMinusSigns(std::vector<Token>::iterator& it, std::vector<Token>& tokens, bool removePlusSigns) {
+        auto beginningIt = it;
+        size_t plusCount = 0;
+        size_t minusCount = 0;
+
+        // Count how many pluses and minuses are in the next several tokens
+        while (true) {
+            if (it == tokens.end()) {
+                if (plusCount == 0 && minusCount == 0) {
+                    break;
+                }
+                else {
+                    auto plusOrMinus = (it - 1)->Type == Token::TokenType::Plus ? '+' : '-';
+
+                    throw std::runtime_error(std::format("LaTeX cannot end with \"{}\"", plusOrMinus));
+                }
+            }
+            else if (it->Type == Token::TokenType::Plus) {
+                ++plusCount;
+            }
+            else if (it->Type == Token::TokenType::Minus) {
+                ++minusCount;
+            }
+            else {
+                break;
+            }
+
+            ++it;
+        }
+
+        // If there are no pluses or minuses, return the iterator (minus one)
+        if (plusCount == 0 && minusCount == 0) {
+            --it;
+        }
+        else {
+            // Remove all the pluses and minuses
+            it = tokens.erase(beginningIt, it);
+
+            // If `removePlusSigns` is false, insert a new plus token
+            if (!removePlusSigns) {
+                it = tokens.insert(it, Token(Token::TokenType::Plus));
+
+                ++it;
+            }
+
+            // If the minus count is odd, insert a minus token after the plus
+            if (minusCount % 2 == 1) {
+                it = tokens.insert(it, Token(Token::TokenType::Minus));
+            }
+        }
+    }
+
     void CleanTokens(std::vector<Token>& tokens) {
         if (!tokens.empty()) {
             auto& firstTokenType = tokens.at(0).Type;
@@ -261,51 +338,119 @@ namespace sparrow_math::internal::parsing_utils {
                 || firstTokenType == Token::TokenType::Ampersand
                 || firstTokenType == Token::TokenType::EqualSign
             ) {
-                throw std::runtime_error("A LaTeX cannot start with the given character");
+                throw std::runtime_error("LaTeX cannot start with the given character");
             }
             else if (firstTokenType == Token::TokenType::Plus) {
                 tokens.erase(tokens.begin());
             }
 
-            int count = 0;
-            for (auto it = 1 + tokens.begin(); it != tokens.end() && count < 100; ++it) {
-                std::cout << std::endl;
-                std::cout << "it: " << it->DebugToString() << std::endl;
-                std::cout << "INDEX: " << it - tokens.begin() << std::endl;
+            for (auto it = 1 + tokens.begin(); it != tokens.end(); ++it) {
                 DebugPrintTokens("TOKENS BEFORE", tokens, it - tokens.begin());
 
-                if ((it - 1)->Type == Token::TokenType::Plus && it->Type == Token::TokenType::Plus) {
-                    it = tokens.erase(it);
+                if (it->Type == Token::TokenType::Plus || it->Type == Token::TokenType::Minus) {
+                    auto removePlusSigns = (it - 1)->Type != Token::TokenType::Num && (it - 1)->Type != Token::TokenType::Symbol;
 
-                    --it;
+                    CondensePlusAndMinusSigns(it, tokens, removePlusSigns);
                 }
-                else if ((it - 1)->Type == Token::TokenType::Minus && it->Type == Token::TokenType::Plus) {
-                    *(it - 1) = Token(Token::TokenType::Plus);
-
-                    *it = Token(Token::TokenType::Minus);
-                }
-                else if ((it - 1)->Type == Token::TokenType::Minus && it->Type == Token::TokenType::Minus) {
-                    it = tokens.erase(it);
-
-                    --it;
-
-                    *it = Token(Token::TokenType::Plus);
-                }
-                else if (((it - 1)->Type == Token::TokenType::Num || (it - 1)->Type == Token::TokenType::Symbol) && it->Type == Token::TokenType::Minus) {
-                    std::cout << "TEST" << std::endl;
-                    std::cout << "it - 1: " << (it - 1)->DebugToString() << std::endl;
-
-                    it = tokens.insert(it, Token(Token::TokenType::Plus));
-
-                    std::cout << "(in) it: " << it->DebugToString() << std::endl;
-                    std::cout << "(in) INDEX: " << it - tokens.begin() << std::endl;
-
+                else if (it->Type == Token::TokenType::Symbol) {
                     ++it;
+
+                    if (it != tokens.end()) {
+                        break;
+                    }
+                    else if (it->Type == Token::TokenType::Symbol || it->Type == Token::TokenType::Num) {
+                        it = tokens.insert(it, Token(Token::TokenType::Plus));
+                    }
+                    else {
+                        --it;
+                    }
                 }
+
+                //     auto beginningIt = it;
+                //     bool containsPlus = false;
+                //     bool isMinusCountOdd = false;
+
+                //     while (true) {
+                //         if (it == tokens.end()) {
+                //             char plusOrMinus = (it - 1)->Type == Token::TokenType::Plus ? '+' : '-';
+
+                //             throw std::runtime_error(std::format("LaTeX cannot end with \"{}\"", plusOrMinus));
+                //         }
+
+                //         std::cout << "(BEFORE LOOP) it: " << it->DebugToString() << std::endl;
+                //         std::cout << "INDEX: " << it - tokens.begin() << std::endl;
+                //         std::cout << std::endl;
+
+                //         if (it->Type == Token::TokenType::Plus) {
+                //             containsPlus = true;
+                //         }
+                //         else if (it->Type == Token::TokenType::Minus) {
+                //             isMinusCountOdd = !isMinusCountOdd;
+                //         }
+                //         else {
+                //             break;
+                //         }
+
+                //         ++it;
+                //     }
+
+                //     std::cout << "it: " << it->DebugToString() << std::endl;
+                //     std::cout << "beginningIt: " << beginningIt->DebugToString() << std::endl;
+
+                //     DebugPrintTokens("TEST 0", tokens, beginningIt - tokens.begin());
+
+                //     DebugPrintTokens("TEST 1", tokens, it - tokens.begin());
+
+                //     it = tokens.erase(beginningIt, it);
+
+                //     DebugPrintTokens("TEST 2", tokens, it - tokens.begin());
+
+                //     it = tokens.insert(it, Token(Token::TokenType::Plus));
+
+                //     DebugPrintTokens("TEST 3", tokens, it - tokens.begin());
+
+                //     ++it;
+
+                //     DebugPrintTokens("TEST 4", tokens, it - tokens.begin());
+
+                //     if (isMinusCountOdd) {
+                //         it = tokens.insert(it, Token(Token::TokenType::Minus));
+                //     }
+
+                //     DebugPrintTokens("TEST 5", tokens, it - tokens.begin());
+                // }
+
+
+
+
+
+
+
+                // if ((it - 1)->Type == Token::TokenType::Plus && it->Type == Token::TokenType::Plus) {
+                //     it = tokens.erase(it);
+
+                //     --it;
+                // }
+                // else if ((it - 1)->Type == Token::TokenType::Minus && it->Type == Token::TokenType::Plus) {
+                //     *(it - 1) = Token(Token::TokenType::Plus);
+
+                //     *it = Token(Token::TokenType::Minus);
+                // }
+                // else if ((it - 1)->Type == Token::TokenType::Minus && it->Type == Token::TokenType::Minus) {
+                //     it = tokens.erase(it);
+
+                //     --it;
+
+                //     *it = Token(Token::TokenType::Plus);
+                // }
+                // else if (((it - 1)->Type == Token::TokenType::Num || (it - 1)->Type == Token::TokenType::Symbol) && it->Type == Token::TokenType::Minus) {
+                //     it = tokens.insert(it, Token(Token::TokenType::Plus));
+
+                //     // ++it;
+                // }
 
                 DebugPrintTokens("TOKENS AFTER", tokens, it - tokens.begin());
-
-                ++count;
+                std::cout << std::endl;
             }
         }
     }

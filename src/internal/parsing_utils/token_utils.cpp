@@ -249,6 +249,57 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
+    void DelimiterBalanceChecker::ProcessDelimiter(Token::TokenType del) {
+        switch (del) {
+            case Token::TokenType::LeftParenthesis:
+            case Token::TokenType::LeftSquareBracket:
+            case Token::TokenType::LeftCurlyBracket:
+            case Token::TokenType::EscapedLeftCurlyBracket:
+            case Token::TokenType::LeftAngleBracket: {
+                _delStack.push(del);
+                break;
+            }
+            case Token::TokenType::RightParenthesis: {
+                HandleRightDelimiter(Token::TokenType::LeftParenthesis);
+                break;
+            }
+            case Token::TokenType::RightSquareBracket: {
+                HandleRightDelimiter(Token::TokenType::LeftSquareBracket);
+                break;
+            }
+            case Token::TokenType::RightCurlyBracket: {
+                HandleRightDelimiter(Token::TokenType::LeftCurlyBracket);
+                break;
+            }
+            case Token::TokenType::EscapedRightCurlyBracket: {
+                HandleRightDelimiter(Token::TokenType::EscapedLeftCurlyBracket);
+                break;
+            }
+            case Token::TokenType::RightAngleBracket: {
+                HandleRightDelimiter(Token::TokenType::LeftAngleBracket);
+                break;
+            }
+            default: {
+                throw std::runtime_error("Code that shouldn't be reached");
+            }
+        }
+    }
+
+    void DelimiterBalanceChecker::EnsureDelimiterStackIsEmpty() {
+        if (!_delStack.empty()) {
+            throw std::runtime_error("Delimiters are unbalanced");
+        }
+    }
+
+    void DelimiterBalanceChecker::HandleRightDelimiter(Token::TokenType leftDel) {
+        if (!_delStack.empty() && _delStack.top() == leftDel) {
+            _delStack.pop();
+        }
+        else {
+            throw std::runtime_error("Delimiters are unbalanced");
+        }
+    }
+
     // class TokenIterator {
     // public:
     //     TokenIterator(std::vector<Token>& tokens) : _tokens(tokens), _lastIndex(tokens.size() - 1) {}

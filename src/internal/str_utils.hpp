@@ -10,6 +10,10 @@ namespace sparrow_math::internal {
         return '0' <= ch && ch <= '9';
     }
 
+    inline bool IsCharNumericOrDot(char ch) {
+        return ch == '.' || IsCharNumeric(ch);
+    }
+
     inline bool IsCharAlphabetical(char ch) {
         return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
     }

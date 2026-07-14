@@ -39,8 +39,20 @@ namespace sparrow_math::internal::parsing_utils {
             case TokenType::Ampersand:
                 type = "Ampersand";
                 break;
+            case TokenType::DoubleAmpersand:
+                type = "DoubleAmpersand";
+                break;
+            case TokenType::Pipe:
+                type = "Pipe";
+                break;
+            case TokenType::DoublePipe:
+                type = "DoublePipe";
+                break;
             case TokenType::EqualSign:
                 type = "EqualSign";
+                break;
+            case TokenType::DoubleEqualSign:
+                type = "DoubleEqualSign";
                 break;
             case TokenType::LineBreak:
                 type = "LineBreak";

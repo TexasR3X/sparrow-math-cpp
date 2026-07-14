@@ -35,7 +35,7 @@ namespace sparrow_math::internal::parsing_utils {
 
         Token(TokenType type = TokenType::Null, std::string value = "") : Type(type), Value(value) {}
 
-        bool IsTokenLeftDelimiter() {
+        bool IsTokenLeftDelimiter() const {
             return Type == TokenType::LeftParenthesis
                 || Type == TokenType::LeftSquareBracket
                 || Type == TokenType::LeftCurlyBracket
@@ -43,7 +43,7 @@ namespace sparrow_math::internal::parsing_utils {
                 || Type == TokenType::LeftAngleBracket;
         }
 
-        bool IsTokenRightDelimiter() {
+        bool IsTokenRightDelimiter() const {
             return Type == TokenType::RightParenthesis
                 || Type == TokenType::RightSquareBracket
                 || Type == TokenType::RightCurlyBracket
@@ -51,11 +51,11 @@ namespace sparrow_math::internal::parsing_utils {
                 || Type == TokenType::RightAngleBracket;
         }
 
-        bool IsTokenDelimiter() {
+        bool IsTokenDelimiter() const {
             return IsTokenLeftDelimiter() || IsTokenRightDelimiter();
         }
 
-        bool IsTokenOperator() {
+        bool IsTokenOperator() const {
             return Type == Token::TokenType::Plus
                 || Type == Token::TokenType::Minus
                 || Type == Token::TokenType::Star
@@ -72,7 +72,7 @@ namespace sparrow_math::internal::parsing_utils {
     public:
         void ProcessDelimiter(Token::TokenType tokenType);
 
-        void EnsureDelimiterStackIsEmpty();
+        void EnsureDelimiterStackIsEmpty() const;
     private:
         std::stack<Token::TokenType> _delStack;
 

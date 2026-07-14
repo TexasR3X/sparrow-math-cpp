@@ -288,7 +288,7 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    void DelimiterBalanceChecker::EnsureDelimiterStackIsEmpty() {
+    void DelimiterBalanceChecker::EnsureDelimiterStackIsEmpty() const {
         if (!_delStack.empty()) {
             throw std::runtime_error("Delimiters are unbalanced");
         }

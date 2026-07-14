@@ -303,31 +303,6 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
-    // class TokenIterator {
-    // public:
-    //     TokenIterator(std::vector<Token>& tokens) : _tokens(tokens), _lastIndex(tokens.size() - 1) {}
-
-    //     Token& Peak() {
-    //         return _tokens.at(_currentIndex);
-    //     }
-
-    //     Token& Advance() {
-    //         auto& currentToken = Peak();
-
-    //         ++_currentIndex;
-
-    //         return currentToken;
-    //     }
-
-    //     bool GetBoolIsNotFinished() const {
-    //         return _currentIndex <= _lastIndex;
-    //     }
-    // private:
-    //     size_t _currentIndex = 0;
-    //     const size_t _lastIndex;
-    //     std::vector<Token> _tokens;
-    // };
-
     void CondensePlusAndMinusSigns(std::vector<Token>::iterator& it, std::vector<Token>& tokens, bool removePlusSigns) {
         auto beginningIt = it;
         size_t plusCount = 0;

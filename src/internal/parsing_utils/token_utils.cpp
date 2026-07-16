@@ -54,6 +54,12 @@ namespace sparrow_math::internal::parsing_utils {
             case TokenType::DoubleEqualSign:
                 type = "DoubleEqualSign";
                 break;
+            case TokenType::ExclamationMark:
+                type = "ExclamationMark";
+                break;
+            case TokenType::NotEqual:
+                type = "NotEqual";
+                break;
             case TokenType::LineBreak:
                 type = "LineBreak";
                 break;
@@ -147,6 +153,16 @@ namespace sparrow_math::internal::parsing_utils {
             }
             else if (it.Peak() == '=') {
                 token.Type = HandleDoubleCharToken(it, '=', Token::TokenType::EqualSign, Token::TokenType::DoubleEqualSign);
+            }
+            else if (it.Peak() == '!') {
+                it.Advance();
+
+                if (it.Peak() == '=') {
+                    token.Type = Token::TokenType::NotEqual;
+                }
+                else {
+                    token.Type = Token::TokenType::ExclamationMark;
+                }
             }
             else if (it.Peak() == '(') {
                 token.Type = Token::TokenType::LeftParenthesis;

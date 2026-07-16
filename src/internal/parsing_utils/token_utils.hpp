@@ -20,6 +20,8 @@ namespace sparrow_math::internal::parsing_utils {
             DoublePipe,
             EqualSign,
             DoubleEqualSign,
+            ExclamationMark,
+            NotEqual,
             LineBreak,
             LeftParenthesis,
             RightParenthesis,

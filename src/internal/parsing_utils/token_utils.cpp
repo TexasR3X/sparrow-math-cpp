@@ -95,6 +95,19 @@ namespace sparrow_math::internal::parsing_utils {
         return type + "(" + Value + ")";
     }
 
+    Token::TokenType HandleDoubleCharToken(StrIterator& it, char ch, Token::TokenType singleCharType, Token::TokenType doubleCharType) {
+        it.Advance();
+
+        if (it.Peak() == ch) {
+            it.Advance();
+
+            return doubleCharType;
+        }
+        else {
+            return singleCharType;
+        }
+    }
+
     std::vector<Token> TokenizeLatex(std::string_view latex) {
         StrIterator it(latex);
         std::vector<Token> tokens;
@@ -127,12 +140,13 @@ namespace sparrow_math::internal::parsing_utils {
                 it.Advance();
             }
             else if (it.Peak() == '&') {
-                token.Type = Token::TokenType::Ampersand;
-                it.Advance();
+                token.Type = HandleDoubleCharToken(it, '&', Token::TokenType::Ampersand, Token::TokenType::DoubleAmpersand);
+            }
+            else if (it.Peak() == '|') {
+                token.Type = HandleDoubleCharToken(it, '|', Token::TokenType::Pipe, Token::TokenType::DoublePipe);
             }
             else if (it.Peak() == '=') {
-                token.Type = Token::TokenType::EqualSign;
-                it.Advance();
+                token.Type = HandleDoubleCharToken(it, '=', Token::TokenType::EqualSign, Token::TokenType::DoubleEqualSign);
             }
             else if (it.Peak() == '(') {
                 token.Type = Token::TokenType::LeftParenthesis;

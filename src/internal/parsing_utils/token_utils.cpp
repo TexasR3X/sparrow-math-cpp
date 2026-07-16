@@ -159,6 +159,7 @@ namespace sparrow_math::internal::parsing_utils {
 
                 if (it.Peak() == '=') {
                     token.Type = Token::TokenType::NotEqual;
+                    it.Advance();
                 }
                 else {
                     token.Type = Token::TokenType::ExclamationMark;

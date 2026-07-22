@@ -419,30 +419,24 @@ namespace sparrow_math::internal::parsing_utils {
 
                         ++it;
                     }
+                    else if (it->Type == Token::TokenType::Num && (it - 1)->Type == Token::TokenType::Num) {
+                        throw std::runtime_error("Cannot have a number literal immediately following another number literal");
+                    }
                 }
                 else if (it->IsTokenDelimiter()) {
                     delBalanceChecker.ProcessDelimiter(it->Type);
 
                     ++it;
                 }
-                else if (it->IsTokenOperator()) {
+                else {
                     ++it;
 
                     if (it == tokens.end()) {
                         throw std::runtime_error("LaTeX cannot end with an operator");
                     }
-                    else if (
-                        it->Type != Token::TokenType::Num
-                        && it->Type != Token::TokenType::Symbol
-                        && it->Type != Token::TokenType::Plus
-                        && it->Type != Token::TokenType::Minus
-                        && !it->IsTokenLeftDelimiter()
-                    ) {
+                    else if (it->IsTokenBinaryOperator()) {
                         throw std::runtime_error("Invalid operator after operator");
                     }
-                }
-                else {
-                    throw std::runtime_error("Unexpected token");
                 }
 
                 DebugPrintTokens("TOKENS AFTER", tokens, it - tokens.begin());

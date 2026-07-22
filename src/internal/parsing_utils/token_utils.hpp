@@ -39,7 +39,8 @@ namespace sparrow_math::internal::parsing_utils {
         TokenType Type;
         std::string Value;
 
-        Token(TokenType type = TokenType::Null, std::string value = "") : Type(type), Value(value) {}
+        Token() : Type(TokenType::Null), Value("") {}
+        Token(TokenType type, std::string value) : Type(type), Value(value) {}
 
         bool IsTokenLeftDelimiter() const {
             return Type == TokenType::LeftParenthesis
@@ -80,7 +81,7 @@ namespace sparrow_math::internal::parsing_utils {
 
     class DelimiterBalanceChecker {
     public:
-        void ProcessDelimiter(Token::TokenType tokenType);
+        void ProcessDelimiter(Token::TokenType del);
 
         void EnsureDelimiterStackIsEmpty() const;
     private:

@@ -101,18 +101,6 @@ namespace sparrow_math::internal::parsing_utils {
         return type + "(" + Value + ")";
     }
 
-    void Handle1Or2CharToken(StrIterator& it, Token& token, char ch, Token::TokenType singleCharType, Token::TokenType doubleCharType) {
-        it.Advance();
-
-        if (it.GetBoolIsNotFinished() && it.Peak() == ch) {
-            token.Type = doubleCharType;
-            it.Advance();
-        }
-        else {
-            token.Type = singleCharType;
-        }
-    }
-
     std::vector<Token> TokenizeLatex(std::string_view latex) {
         StrIterator it(latex);
         std::vector<Token> tokens;
@@ -122,70 +110,142 @@ namespace sparrow_math::internal::parsing_utils {
 
             if (it.Peak() == '+') {
                 token.Type = Token::TokenType::Plus;
+                token.Value = "+";
+
                 it.Advance();
             }
             else if (it.Peak() == '-') {
                 token.Type = Token::TokenType::Minus;
+                token.Value = "-";
+
                 it.Advance();
             }
             else if (it.Peak() == '*') {
                 token.Type = Token::TokenType::Star;
+                token.Value = "*";
+
                 it.Advance();
             }
             else if (it.Peak() == '/') {
                 token.Type = Token::TokenType::ForwardSlash;
+                token.Value = "/";
+
                 it.Advance();
             }
             else if (it.Peak() == '_') {
                 token.Type = Token::TokenType::Underscore;
+                token.Value = "_";
+
                 it.Advance();
             }
             else if (it.Peak() == '^') {
                 token.Type = Token::TokenType::UpArrow;
+                token.Value = "^";
+
                 it.Advance();
             }
             else if (it.Peak() == '&') {
-                Handle1Or2CharToken(it, token, '&', Token::TokenType::Ampersand, Token::TokenType::DoubleAmpersand);
+                it.Advance();
+
+                if (it.GetBoolIsNotFinished() && it.Peak() == '&') {
+                    token.Type = Token::TokenType::DoubleAmpersand;
+                    token.Value = "&&";
+
+                    it.Advance();
+                }
+                else {
+                    token.Type = Token::TokenType::Ampersand;
+                    token.Value = "&";
+                }
             }
             else if (it.Peak() == '|') {
-                Handle1Or2CharToken(it, token, '|', Token::TokenType::Pipe, Token::TokenType::DoublePipe);
+                it.Advance();
+
+                if (it.GetBoolIsNotFinished() && it.Peak() == '|') {
+                    token.Type = Token::TokenType::DoublePipe;
+                    token.Value = "||";
+
+                    it.Advance();
+                }
+                else {
+                    token.Type = Token::TokenType::Pipe;
+                    token.Value = "|";
+                }
             }
             else if (it.Peak() == '=') {
-                Handle1Or2CharToken(it, token, '=', Token::TokenType::EqualSign, Token::TokenType::DoubleEqualSign);
+                it.Advance();
+
+                if (it.GetBoolIsNotFinished() && it.Peak() == '=') {
+                    token.Type = Token::TokenType::DoubleEqualSign;
+                    token.Value = "==";
+
+                    it.Advance();
+                }
+                else {
+                    token.Type = Token::TokenType::EqualSign;
+                    token.Value = "=";
+                }
             }
             else if (it.Peak() == '!') {
-                Handle1Or2CharToken(it, token, '=', Token::TokenType::ExclamationMark, Token::TokenType::NotEqual);
+                it.Advance();
+
+                if (it.GetBoolIsNotFinished() && it.Peak() == '=') {
+                    token.Type = Token::TokenType::NotEqual;
+                    token.Value = "!=";
+
+                    it.Advance();
+                }
+                else {
+                    token.Type = Token::TokenType::ExclamationMark;
+                    token.Value = "!";
+                }
             }
             else if (it.Peak() == '(') {
                 token.Type = Token::TokenType::LeftParenthesis;
+                token.Value = "(";
+
                 it.Advance();
             }
             else if (it.Peak() == ')') {
                 token.Type = Token::TokenType::RightParenthesis;
+                token.Value = ")";
+
                 it.Advance();
             }
             else if (it.Peak() == '[') {
                 token.Type = Token::TokenType::LeftSquareBracket;
+                token.Value = "[";
+
                 it.Advance();
             }
             else if (it.Peak() == ']') {
                 token.Type = Token::TokenType::RightSquareBracket;
+                token.Value = "]";
+
                 it.Advance();
             }
             else if (it.Peak() == '{') {
                 token.Type = Token::TokenType::LeftCurlyBracket;
+                token.Value = "{";
+
                 it.Advance();
             }
             else if (it.Peak() == '}') {
                 token.Type = Token::TokenType::RightCurlyBracket;
+                token.Value = "}";
+
                 it.Advance();
             }
             else if (it.Peak() == '<') {
                 token.Type = Token::TokenType::LeftAngleBracket;
+                token.Value = "<";
+
                 it.Advance();
             }
             else if (it.Peak() == '>') {
                 token.Type = Token::TokenType::RightAngleBracket;
+                token.Value = ">";
+
                 it.Advance();
             }
             else if (it.Peak() == '\\') {
@@ -194,14 +254,20 @@ namespace sparrow_math::internal::parsing_utils {
                 if (it.GetBoolIsNotFinished()) {
                     if (it.Peak() == '\\') {
                         token.Type = Token::TokenType::LineBreak;
+                        token.Value = "\\\\";
+
                         it.Advance();
                     }
                     else if (it.Peak() == '{') {
                         token.Type = Token::TokenType::EscapedLeftCurlyBracket;
+                        token.Value = "\\{";
+
                         it.Advance();
                     }
                     else if (it.Peak() == '}') {
                         token.Type = Token::TokenType::EscapedRightCurlyBracket;
+                        token.Value = "\\}";
+
                         it.Advance();
                     }
                     else if (IsCharWhitespace(it.Peak()) || it.Peak() == ',' || it.Peak() == ':' || it.Peak() == ';' || it.Peak() == '!') {
@@ -377,14 +443,14 @@ namespace sparrow_math::internal::parsing_utils {
 
             // If `removePlusSigns` is false, insert a new plus token
             if (!removePlusSigns) {
-                it = tokens.insert(it, Token(Token::TokenType::Plus));
+                it = tokens.insert(it, Token(Token::TokenType::Plus, "+"));
 
                 ++it;
             }
 
             // If the minus count is odd, insert a minus token after the plus
             if (minusCount % 2 == 1) {
-                it = tokens.insert(it, Token(Token::TokenType::Minus));
+                it = tokens.insert(it, Token(Token::TokenType::Minus, "-"));
 
                 ++it;
             }
@@ -415,7 +481,7 @@ namespace sparrow_math::internal::parsing_utils {
                         break;
                     }
                     else if (it->Type == Token::TokenType::Symbol || (it->Type == Token::TokenType::Num && (it - 1)->Type == Token::TokenType::Symbol)) {
-                        it = tokens.insert(it, Token(Token::TokenType::Star));
+                        it = tokens.insert(it, Token(Token::TokenType::Star, "*"));
 
                         ++it;
                     }
@@ -431,7 +497,7 @@ namespace sparrow_math::internal::parsing_utils {
                 else {
                     ++it;
 
-                    if (it == tokens.end()) {
+                    if (it == tokens.end() && (it - 1)->Type != Token::TokenType::LineBreak) {
                         throw std::runtime_error("LaTeX cannot end with an operator");
                     }
                     else if (it->IsTokenBinaryOperator()) {

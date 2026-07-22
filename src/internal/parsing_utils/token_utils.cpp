@@ -101,16 +101,15 @@ namespace sparrow_math::internal::parsing_utils {
         return type + "(" + Value + ")";
     }
 
-    Token::TokenType HandleDoubleCharToken(StrIterator& it, char ch, Token::TokenType singleCharType, Token::TokenType doubleCharType) {
+    void Handle1Or2CharToken(StrIterator& it, Token& token, char ch, Token::TokenType singleCharType, Token::TokenType doubleCharType) {
         it.Advance();
 
-        if (it.Peak() == ch) {
+        if (it.GetBoolIsNotFinished() && it.Peak() == ch) {
+            token.Type = doubleCharType;
             it.Advance();
-
-            return doubleCharType;
         }
         else {
-            return singleCharType;
+            token.Type = singleCharType;
         }
     }
 
@@ -146,24 +145,16 @@ namespace sparrow_math::internal::parsing_utils {
                 it.Advance();
             }
             else if (it.Peak() == '&') {
-                token.Type = HandleDoubleCharToken(it, '&', Token::TokenType::Ampersand, Token::TokenType::DoubleAmpersand);
+                Handle1Or2CharToken(it, token, '&', Token::TokenType::Ampersand, Token::TokenType::DoubleAmpersand);
             }
             else if (it.Peak() == '|') {
-                token.Type = HandleDoubleCharToken(it, '|', Token::TokenType::Pipe, Token::TokenType::DoublePipe);
+                Handle1Or2CharToken(it, token, '|', Token::TokenType::Pipe, Token::TokenType::DoublePipe);
             }
             else if (it.Peak() == '=') {
-                token.Type = HandleDoubleCharToken(it, '=', Token::TokenType::EqualSign, Token::TokenType::DoubleEqualSign);
+                Handle1Or2CharToken(it, token, '=', Token::TokenType::EqualSign, Token::TokenType::DoubleEqualSign);
             }
             else if (it.Peak() == '!') {
-                it.Advance();
-
-                if (it.Peak() == '=') {
-                    token.Type = Token::TokenType::NotEqual;
-                    it.Advance();
-                }
-                else {
-                    token.Type = Token::TokenType::ExclamationMark;
-                }
+                Handle1Or2CharToken(it, token, '=', Token::TokenType::ExclamationMark, Token::TokenType::NotEqual);
             }
             else if (it.Peak() == '(') {
                 token.Type = Token::TokenType::LeftParenthesis;
@@ -225,11 +216,11 @@ namespace sparrow_math::internal::parsing_utils {
                         }
                     }
                     else {
-                        throw std::runtime_error(std::format("Invalid character ({}) after \"\\\"", it.Peak()));
+                        throw std::runtime_error(std::format(R"(Invalid character ({}) after "\")", it.Peak()));
                     }
                 }
                 else {
-                    throw std::runtime_error("LaTeX cannot end with \"\\\"");
+                    throw std::runtime_error(R"(LaTeX cannot end with "\")");
                 }                
             }
             else if (IsCharWhitespace(it.Peak())) {

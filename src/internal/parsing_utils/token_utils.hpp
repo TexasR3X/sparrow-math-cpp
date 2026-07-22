@@ -61,14 +61,18 @@ namespace sparrow_math::internal::parsing_utils {
             return IsTokenLeftDelimiter() || IsTokenRightDelimiter();
         }
 
-        bool IsTokenOperator() const {
-            return Type == Token::TokenType::Plus
-                || Type == Token::TokenType::Minus
-                || Type == Token::TokenType::Star
+        bool IsTokenBinaryOperator() const {
+            return Type == Token::TokenType::Star
                 || Type == Token::TokenType::ForwardSlash
                 || Type == Token::TokenType::Underscore
                 || Type == Token::TokenType::UpArrow
-                || Type == Token::TokenType::Ampersand;
+                || Type == Token::TokenType::Ampersand
+                || Type == Token::TokenType::DoubleAmpersand
+                || Type == Token::TokenType::Pipe
+                || Type == Token::TokenType::DoublePipe
+                || Type == Token::TokenType::EqualSign
+                || Type == Token::TokenType::DoubleEqualSign
+                || Type == Token::TokenType::NotEqual;
         }
 
         std::string DebugToString() const;

@@ -444,14 +444,15 @@ namespace sparrow_math::internal::parsing_utils {
             // If `removePlusSigns` is false, insert a new plus token
             if (!removePlusSigns) {
                 it = tokens.insert(it, Token(Token::TokenType::Plus, "+"));
-
                 ++it;
             }
 
             // If the minus count is odd, insert a minus token after the plus
             if (minusCount % 2 == 1) {
-                it = tokens.insert(it, Token(Token::TokenType::Minus, "-"));
+                it = tokens.insert(it, Token(Token::TokenType::Num, "-1"));
+                ++it;
 
+                it = tokens.insert(it, Token(Token::TokenType::Star, "*"));
                 ++it;
             }
         }

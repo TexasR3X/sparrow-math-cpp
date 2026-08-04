@@ -1,7 +1,7 @@
 #include <memory>
-#include <unordered_map>
 #include <vector>
 #include "token_utils.hpp"
+#include "operator_utils.hpp"
 
 #pragma once
 namespace sparrow_math::internal::parsing_utils {
@@ -11,33 +11,54 @@ namespace sparrow_math::internal::parsing_utils {
     class Node {
     public:
         enum class NodeType {
-            Sum,
-            Product,
-            Power,
-            DelimiterGrouping,
-            Expr,
+            Num,
             Symbol,
-            Num
+            OperatorNode,
+            Expr
         };
+
+        // enum class NodeType {
+        //     Num,
+        //     Symbol,
+        //     Sum,
+        //     Product,
+        //     Fraction,
+        //     Power,
+        //     BooleanAnd,
+        //     BitwiseAnd,
+        //     BooleanOr,
+        //     BitwiseOr,
+        //     BooleanNot,
+        //     BooleanEqual,
+        //     BooleanNotEqual,
+        //     DelimiterGrouping,
+        //     Expr
+        // };
 
         const NodeType Type;
 
         BranchNode* Parent = nullptr;
 
-        Node(const NodeType& type) : Type(type) {}
+        Node(NodeType type) : Type(type) {}
 
         virtual ~Node() = default;
 
-        virtual std::string DebugToString() const = 0;
-    protected:
-        static inline std::unordered_map<NodeType, std::string> _nodeTypeMap = {
-            { NodeType::Num, "Num" },
-            { NodeType::Symbol, "Symbol" },
-            { NodeType::Sum, "Sum" },
-            { NodeType::Product, "Product" },
-            { NodeType::Power, "Power" },
-            { NodeType::Expr, "Expr" }
-        };
+        template<typename T>
+        // requires std::derived_from<T, Node>
+        T* CastAsType() {
+            return dynamic_cast<T*>(this);
+        }
+
+        virtual std::string DebugToString() = 0;
+    // protected:
+    //     static inline std::unordered_map<NodeType, std::string> _nodeTypeMap = {
+    //         { NodeType::Num, "Num" },
+    //         { NodeType::Symbol, "Symbol" },
+    //         // { NodeType::Sum, "Sum" },
+    //         // { NodeType::Product, "Product" },
+    //         // { NodeType::Power, "Power" },
+    //         // { NodeType::Expr, "Expr" }
+    //     };
     };
 
     class NumNode : public Node {
@@ -46,7 +67,16 @@ namespace sparrow_math::internal::parsing_utils {
 
         NumNode(double num) : Node(NodeType::Num), Num(num) {}
 
-        std::string DebugToString() const override;
+        std::string DebugToString() override;
+    };
+
+    class SymbolNode : public Node {
+    public:
+        std::string Name;
+
+        SymbolNode(std::string_view name) : Node(NodeType::Symbol), Name(name) {}
+
+        std::string DebugToString() override;
     };
 
     class BranchNode : public Node {
@@ -63,30 +93,22 @@ namespace sparrow_math::internal::parsing_utils {
 
         std::unique_ptr<Node> RemoveLastChild();
 
-        BranchNode* GetNearestAncestorOfType(NodeType type, bool stayWithinDels) const;
+        BranchNode* GetNearestAncestorOfType(const Operator& type, bool stayWithinDels) const;
 
-        BranchNode* GetNearestAncestorOrSelfOfType(NodeType type, bool stayWithinDels);
+        BranchNode* GetNearestAncestorOrSelfOfType(const Operator& type, bool stayWithinDels);
 
         BranchNode* GetNearestGroupingAncestorOrSelf();
 
-        std::string DebugToString() const override;
-    private:
+        std::string DebugToString() override;
+    protected:
         std::vector<std::unique_ptr<Node>> _children;
     };
 
-    class SumNode : public BranchNode {
+    class OperatorNode : public BranchNode {
     public:
-        SumNode() : BranchNode(NodeType::Sum) {}
-    };
+        Operator Op;
 
-    class ProductNode : public BranchNode {
-    public:
-        ProductNode() : BranchNode(NodeType::Product) {}
-    };
-
-    class PowerNode : public BranchNode {
-    public:
-        PowerNode() : BranchNode(NodeType::Power) {}
+        OperatorNode(Operator op) : BranchNode(NodeType::OperatorNode), Op(op) {}
     };
 
     class ExprNode : public BranchNode {

@@ -10,62 +10,24 @@ namespace sparrow_math::internal::parsing_utils {
 
     class Node {
     public:
-        enum class NodeType {
-            Num,
-            Symbol,
-            OperatorNode,
-            Expr
-        };
-
-        // enum class NodeType {
-        //     Num,
-        //     Symbol,
-        //     Sum,
-        //     Product,
-        //     Fraction,
-        //     Power,
-        //     BooleanAnd,
-        //     BitwiseAnd,
-        //     BooleanOr,
-        //     BitwiseOr,
-        //     BooleanNot,
-        //     BooleanEqual,
-        //     BooleanNotEqual,
-        //     DelimiterGrouping,
-        //     Expr
-        // };
-
-        const NodeType Type;
-
         BranchNode* Parent = nullptr;
-
-        Node(NodeType type) : Type(type) {}
 
         virtual ~Node() = default;
 
         template<typename T>
-        // requires std::derived_from<T, Node>
+        requires std::derived_from<T, Node>
         T* CastAsType() {
             return dynamic_cast<T*>(this);
         }
 
         virtual std::string DebugToString() = 0;
-    // protected:
-    //     static inline std::unordered_map<NodeType, std::string> _nodeTypeMap = {
-    //         { NodeType::Num, "Num" },
-    //         { NodeType::Symbol, "Symbol" },
-    //         // { NodeType::Sum, "Sum" },
-    //         // { NodeType::Product, "Product" },
-    //         // { NodeType::Power, "Power" },
-    //         // { NodeType::Expr, "Expr" }
-    //     };
     };
 
     class NumNode : public Node {
     public:
         double Num;
 
-        NumNode(double num) : Node(NodeType::Num), Num(num) {}
+        NumNode(double num) : Num(num) {}
 
         std::string DebugToString() override;
     };
@@ -74,14 +36,16 @@ namespace sparrow_math::internal::parsing_utils {
     public:
         std::string Name;
 
-        SymbolNode(std::string_view name) : Node(NodeType::Symbol), Name(name) {}
+        SymbolNode(std::string_view name) : Name(name) {}
 
         std::string DebugToString() override;
     };
 
     class BranchNode : public Node {
     public:
-        BranchNode(NodeType type) : Node(type) {}
+        Operator Op;
+
+        BranchNode(Operator op) : Op(op) {}
 
         virtual ~BranchNode() = default;
 
@@ -93,27 +57,15 @@ namespace sparrow_math::internal::parsing_utils {
 
         std::unique_ptr<Node> RemoveLastChild();
 
-        BranchNode* GetNearestAncestorOfType(const Operator& type, bool stayWithinDels) const;
+        BranchNode* GetNearestAncestorWithOp(const Operator& type, bool stayWithinDels) const;
 
-        BranchNode* GetNearestAncestorOrSelfOfType(const Operator& type, bool stayWithinDels);
+        BranchNode* GetNearestAncestorOrSelfWithOp(const Operator& type, bool stayWithinDels);
 
         BranchNode* GetNearestGroupingAncestorOrSelf();
 
         std::string DebugToString() override;
     protected:
         std::vector<std::unique_ptr<Node>> _children;
-    };
-
-    class OperatorNode : public BranchNode {
-    public:
-        Operator Op;
-
-        OperatorNode(Operator op) : BranchNode(NodeType::OperatorNode), Op(op) {}
-    };
-
-    class ExprNode : public BranchNode {
-    public:
-        ExprNode() : BranchNode(NodeType::Expr) {}
     };
 
     std::string ParseExpr(const std::vector<Token>& tokens);

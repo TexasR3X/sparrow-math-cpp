@@ -10,7 +10,7 @@ namespace sparrow_math::internal::parsing_utils {
 
     // Create a new node inbetween the focus and its last child. Then move the focus to
     // the new node (reassign the variable `focus` to store the address of the new node).
-    void InsertNodeBetweenFocusAndLastChildThenMoveFocus(BranchNode*& focus, Operator nodeOp) {
+    void InsertNodeBetweenFocusAndLastChildThenMoveFocus(BranchNode*& focus, const Operator& nodeOp) {
         // Create the new node
         auto newNode = std::make_unique<BranchNode>(nodeOp);
 

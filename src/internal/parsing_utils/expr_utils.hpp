@@ -57,11 +57,13 @@ namespace sparrow_math::internal::parsing_utils {
 
         std::unique_ptr<Node> RemoveLastChild();
 
-        BranchNode* GetNearestAncestorWithOp(const Operator& type, bool stayWithinDels) const;
+        BranchNode* GetNearestAncestorWithOp(const Operator& op, bool stayWithinDels) const;
 
-        BranchNode* GetNearestAncestorOrSelfWithOp(const Operator& type, bool stayWithinDels);
+        BranchNode* GetNearestAncestorOrSelfWithOp(const Operator& op, bool stayWithinDels);
 
         BranchNode* GetNearestGroupingAncestorOrSelf();
+
+        BranchNode* GetAncestorWhereToInsertOperator(const Operator& opToInsert, bool useLeftToRightPriority);
 
         std::string DebugToString() override;
     protected:

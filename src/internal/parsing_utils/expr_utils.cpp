@@ -1,4 +1,3 @@
-#include <cstddef>
 #include <format>
 #include <iostream>
 #include <stdexcept>
@@ -28,16 +27,6 @@ namespace sparrow_math::internal::parsing_utils {
 
         // Move the focus to the new node
         focus = newNodeRawPtr;
-    }
-
-    // Create a new node inbetween the focus and its parent. Then move the focus to
-    // the new node (reassign the variable `focus` to store the address of the new node).
-    void InsertNodeBetweenFocusAndParentThenMoveFocus(BranchNode*& focus, const Operator& nodeOp) {
-        // For a moment, move the focus to the current focus's parent
-        focus = focus->GetNearestGroupingAncestorOrSelf();
-
-        // Insert a new node inbetween the current focus and the old focus, then move the focus to that new node
-        InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, nodeOp);
     }
 
 
@@ -113,6 +102,20 @@ namespace sparrow_math::internal::parsing_utils {
         }
         else {
             throw std::runtime_error("Code that shouldn't be reached; Node has no grouping ancestor");
+        }
+    }
+
+    BranchNode* BranchNode::GetAncestorWhereToInsertOperator(const Operator& opToInsert, bool useLeftToRightPriority) {
+        if (Op.GetOrderOfOperationsRank() > opToInsert.GetOrderOfOperationsRank() || (useLeftToRightPriority && Op.GetOrderOfOperationsRank() == opToInsert.GetOrderOfOperationsRank())) {
+            if (Parent) {
+                return Parent->GetAncestorWhereToInsertOperator(opToInsert, useLeftToRightPriority);
+            }
+            else {
+                throw std::runtime_error("Code that shouldn't be reached; `Parent` is `nullptr`");
+            }
+        }
+        else {
+            return this;
         }
     }
 
@@ -198,23 +201,11 @@ namespace sparrow_math::internal::parsing_utils {
             }
             else {
                 const Operator currentTokenOp(currentToken.Type);
-                const auto& focusOp = focus->Op;
 
-                if (currentTokenOp > focusOp) {
-                    InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, currentTokenOp);
-                }
-                else if (currentTokenOp < focusOp) {
-                    if (auto ancestor = focus->GetNearestAncestorOrSelfWithOp(currentTokenOp, true)) {
-                        // Move the focus to the ancestor with the operator of `currentTokenOp`
-                        focus = ancestor;
-                    }
-                    else {
-                        InsertNodeBetweenFocusAndParentThenMoveFocus(focus, currentTokenOp);
-                    }
-                }
-                else if (currentTokenOp != focusOp) {
-                    InsertNodeBetweenFocusAndParentThenMoveFocus(focus, currentTokenOp);
-                }
+                // Move the focus to the ancestor where the new operator should be inserted
+                focus = focus->GetAncestorWhereToInsertOperator(currentTokenOp, currentTokenOp != Operator::OperatorType::Power);
+
+                InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, currentTokenOp);
             }
 
             std::cout << "currentToken: " << currentToken.DebugToString() << std::endl;

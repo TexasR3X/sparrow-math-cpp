@@ -124,7 +124,7 @@ namespace sparrow_math::internal::parsing_utils {
 
     // ========== Public Non-method Functions ========== //
 
-    std::string ParseExpr(const std::vector<Token>& tokens) {
+    std::unique_ptr<BranchNode> ParseExpr(const std::vector<Token>& tokens) {
         auto exprNode = std::make_unique<BranchNode>(Operator::OperatorType::Expr);
         auto focus = exprNode.get();
 
@@ -213,6 +213,6 @@ namespace sparrow_math::internal::parsing_utils {
             std::cout << std::endl;
         }
 
-        return exprNode->DebugToString();
+        return std::move(exprNode);
     }
 }

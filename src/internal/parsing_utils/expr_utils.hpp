@@ -68,5 +68,5 @@ namespace sparrow_math::internal::parsing_utils {
         std::vector<std::unique_ptr<Node>> _children;
     };
 
-    std::string ParseExpr(const std::vector<Token>& tokens);
+    std::unique_ptr<BranchNode> ParseExpr(const std::vector<Token>& tokens);
 }

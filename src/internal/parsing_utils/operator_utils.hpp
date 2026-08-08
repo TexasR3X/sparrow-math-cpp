@@ -37,32 +37,44 @@ namespace sparrow_math::internal::parsing_utils {
             return _type != otherType;
         }
 
-        bool operator<(const Operator& other) const noexcept {
-            return GetOrderOfOperationsRank() < other.GetOrderOfOperationsRank();
-        }
-        bool operator<(OperatorType otherType) const noexcept {
-            return GetOrderOfOperationsRank() < GetOrderOfOperationsRank(otherType);
+        static int GetOrderOfOperationsRank(OperatorType type) noexcept {
+            switch (type) {
+                case OperatorType::Expr:
+                    return 0;
+
+                case OperatorType::DelimiterGrouping:
+                    return 1;
+
+                case OperatorType::BooleanAnd:
+                case OperatorType::BooleanOr:
+                    return 2;
+
+                case OperatorType::BooleanEqual:
+                case OperatorType::BooleanNotEqual:
+                    return 3;
+
+                case OperatorType::BitwiseAnd:
+                case OperatorType::BitwiseOr:
+                    return 4;
+
+                case OperatorType::Sum:
+                    return 5;
+
+                case OperatorType::Product:
+                case OperatorType::Fraction:
+                    return 6;
+
+                case OperatorType::Power:
+                case OperatorType::Underscore:
+                    return 7;
+
+                case OperatorType::BooleanNot:
+                    return 8;
+            }
         }
 
-        bool operator<=(const Operator& other) const noexcept {
-            return GetOrderOfOperationsRank() <= other.GetOrderOfOperationsRank();
-        }
-        bool operator<=(OperatorType otherType) const noexcept {
-            return GetOrderOfOperationsRank() <= GetOrderOfOperationsRank(otherType);
-        }
-
-        bool operator>(const Operator& other) const noexcept {
-            return GetOrderOfOperationsRank() > other.GetOrderOfOperationsRank();
-        }
-        bool operator>(OperatorType otherType) const noexcept {
-            return GetOrderOfOperationsRank() > GetOrderOfOperationsRank(otherType);
-        }
-
-        bool operator>=(const Operator& other) const noexcept {
-            return GetOrderOfOperationsRank() >= other.GetOrderOfOperationsRank();
-        }
-        bool operator>=(OperatorType otherType) const noexcept {
-            return GetOrderOfOperationsRank() >= GetOrderOfOperationsRank(otherType);
+        int GetOrderOfOperationsRank() const noexcept {
+            return GetOrderOfOperationsRank(_type);
         }
 
         std::string DebugToString() const noexcept {
@@ -112,46 +124,6 @@ namespace sparrow_math::internal::parsing_utils {
         }
     private:
         const OperatorType _type;
-
-        static int GetOrderOfOperationsRank(OperatorType type) noexcept {
-            switch (type) {
-                case OperatorType::Expr:
-                    return 0;
-
-                case OperatorType::BooleanAnd:
-                case OperatorType::BooleanOr:
-                    return 1;
-
-                case OperatorType::BooleanEqual:
-                case OperatorType::BooleanNotEqual:
-                    return 2;
-
-                case OperatorType::BitwiseAnd:
-                case OperatorType::BitwiseOr:
-                    return 3;
-
-                case OperatorType::Sum:
-                    return 4;
-
-                case OperatorType::Product:
-                case OperatorType::Fraction:
-                    return 5;
-
-                case OperatorType::Power:
-                case OperatorType::Underscore:
-                    return 6;
-
-                case OperatorType::BooleanNot:
-                    return 7;
-
-                case OperatorType::DelimiterGrouping:
-                    return 8;
-            }
-        }
-
-        int GetOrderOfOperationsRank() const noexcept {
-            return GetOrderOfOperationsRank(_type);
-        }
 
         static OperatorType MapTokenTypeToOperatorType(Token::TokenType tokenType) {
             switch (tokenType) {

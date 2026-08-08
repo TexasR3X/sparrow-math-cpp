@@ -30,6 +30,16 @@ namespace sparrow_math::internal::parsing_utils {
         focus = newNodeRawPtr;
     }
 
+    // Create a new node inbetween the focus and its parent. Then move the focus to
+    // the new node (reassign the variable `focus` to store the address of the new node).
+    void InsertNodeBetweenFocusAndParentThenMoveFocus(BranchNode*& focus, const Operator& nodeOp) {
+        // For a moment, move the focus to the current focus's parent
+        focus = focus->GetNearestGroupingAncestorOrSelf();
+
+        // Insert a new node inbetween the current focus and the old focus, then move the focus to that new node
+        InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, nodeOp);
+    }
+
 
 
     // ========== NumNode ========== //
@@ -199,11 +209,11 @@ namespace sparrow_math::internal::parsing_utils {
                         focus = ancestor;
                     }
                     else {
-                        // Move the focus to the ancestor
-                        focus = focus->GetNearestGroupingAncestorOrSelf();
-
-                        InsertNodeBetweenFocusAndLastChildThenMoveFocus(focus, currentTokenOp);
+                        InsertNodeBetweenFocusAndParentThenMoveFocus(focus, currentTokenOp);
                     }
+                }
+                else if (currentTokenOp != focusOp) {
+                    InsertNodeBetweenFocusAndParentThenMoveFocus(focus, currentTokenOp);
                 }
             }
 

@@ -481,7 +481,9 @@ namespace sparrow_math::internal::parsing_utils {
                     if (it == tokens.end()) {
                         break;
                     }
-                    else if (it->Type == Token::TokenType::Symbol || (it->Type == Token::TokenType::Num && (it - 1)->Type == Token::TokenType::Symbol)) {
+                    else if (it->Type == Token::TokenType::Symbol || it->IsTokenLeftDelimiter() || (
+                        it->Type == Token::TokenType::Num && (it - 1)->Type == Token::TokenType::Symbol
+                    )) {
                         it = tokens.insert(it, Token(Token::TokenType::Star, "*"));
 
                         ++it;
@@ -494,6 +496,18 @@ namespace sparrow_math::internal::parsing_utils {
                     delBalanceChecker.ProcessDelimiter(it->Type);
 
                     ++it;
+
+                    if (it == tokens.end()) {
+                        break;
+                    }
+                    // Handle implied multiplication after closing delimiters
+                    else if ((it - 1)->IsTokenRightDelimiter() && (
+                        it->Type == Token::TokenType::Num || it->Type == Token::TokenType::Symbol || it->IsTokenLeftDelimiter()
+                    )) {
+                        it = tokens.insert(it, Token(Token::TokenType::Star, "*"));
+
+                        ++it;
+                    }
                 }
                 else {
                     ++it;

@@ -43,19 +43,6 @@ namespace sparrow_math::internal::parsing_utils {
         auto node1AsBranch = node1->CastAsType<BranchNode>();
         auto node2AsBranch = node2->CastAsType<BranchNode>();
 
-        auto TryToMergeSymbolAndPower = [](SymbolNode* symbolNode, BranchNode* powerNode) -> std::unique_ptr<Node> {
-            if (symbolNode && powerNode && powerNode->Op == Operator::OperatorType::Power) {
-                auto baseNode = powerNode->GetChildAt(0);
-                auto expNode = powerNode->GetLastChild();
-
-                if (baseNode && expNode && baseNode == symbolNode) {
-                    return *symbolNode ^ *(*expNode + 1.0);
-                }
-            }
-
-            return nullptr;
-        };
-
         if (node1AsNum && node2AsNum) {
             // Get the product of the two numbers
             auto num = node1AsNum->Num * node2AsNum->Num;
@@ -66,20 +53,27 @@ namespace sparrow_math::internal::parsing_utils {
         else if (node1AsSymbol && node2AsSymbol && node1AsSymbol->Name == node2AsSymbol->Name) {
             return *node1AsSymbol ^ 2.0;
         }
-        else if (auto mergedNode = TryToMergeSymbolAndPower(node1AsSymbol, node2AsBranch)) {
-            return std::move(mergedNode);
-        }
-        else if (auto mergedNode = TryToMergeSymbolAndPower(node2AsSymbol, node1AsBranch)) {
-            return std::move(mergedNode);
-        }
-        else if (node1AsBranch && node2AsBranch && node1AsBranch->Op == Operator::OperatorType::Power && node2AsBranch->Op == Operator::OperatorType::Power) {
-            auto baseOfNode1AsSymbol = node1AsBranch->GetChildAt(0)->CastAsType<SymbolNode>();
-            auto baseOfNode2AsSymbol = node2AsBranch->GetChildAt(0)->CastAsType<SymbolNode>();
-            auto expOfNode1 = node1AsBranch->GetLastChild();
-            auto expOfNode2 = node2AsBranch->GetLastChild();
+        else if (node1AsBranch && node1AsBranch->Op == Operator::OperatorType::Power) {
+            auto [node1Base, node1Exp] = node1AsBranch->TryToDisassemblePower();
 
-            if (baseOfNode1AsSymbol && baseOfNode2AsSymbol && expOfNode1 && expOfNode2 && baseOfNode1AsSymbol->Name == baseOfNode2AsSymbol->Name) {
-                return *baseOfNode1AsSymbol ^ *(*expOfNode1 + *expOfNode2);
+            if (node1Base && node1Exp) {
+                if (node2AsBranch && node2AsBranch->Op == Operator::OperatorType::Power) {
+                    auto [node2Base, node2Exp] = node2AsBranch->TryToDisassemblePower();
+
+                    if (node2Base && node2Exp && *node1Base == *node2Base) {
+                        return *node1Base ^ *(*node1Exp + *node2Exp);
+                    }
+                }
+                else if (*node1Base == *node2) {
+                    return *node1Base ^ *(*node1Exp + 1.0);
+                }
+            }
+        }
+        else if (node2AsBranch && node2AsBranch->Op == Operator::OperatorType::Power) {
+            auto [node2Base, node2Exp] = node2AsBranch->TryToDisassemblePower();
+
+            if (node2Base && node2Exp && *node1 == *node2Base) {
+                return *node2Base ^ *(*node2Exp + 1.0);
             }
         }
 
@@ -296,6 +290,18 @@ namespace sparrow_math::internal::parsing_utils {
         }
     }
 
+    std::tuple<Node*, Node*> BranchNode::TryToDisassemblePower() const {
+        if (Op == Operator::OperatorType::Power && _children.size() == 2) {
+            auto baseNode = GetChildAt(0);
+            auto expNode = GetLastChild();
+
+            return { baseNode, expNode };
+        }
+        else {
+            return { nullptr, nullptr };
+        }
+    }
+
     std::unique_ptr<Node> BranchNode::SimplifyNode() const {
         std::unique_ptr<BranchNode> simplifiedNode;
 
@@ -341,11 +347,10 @@ namespace sparrow_math::internal::parsing_utils {
             }
         }
         else if (Op == Operator::OperatorType::Power) {
-            if (_children.size() == 2) {
-                auto baseNode = GetChildAt(0);
-                auto expNode = GetLastChild();
+            auto [baseNode, expNode] = TryToDisassemblePower();
 
-                // TODO: Finish code that handles power nodes
+            if (baseNode && expNode) {
+                
             }
             else {
                 throw std::runtime_error("Power can only have two operands");

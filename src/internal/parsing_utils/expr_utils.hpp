@@ -1,4 +1,5 @@
 #include <memory>
+#include <tuple>
 #include <vector>
 #include "token_utils.hpp"
 #include "operator_utils.hpp"
@@ -87,7 +88,6 @@ namespace sparrow_math::internal::parsing_utils {
 
         std::unique_ptr<Node> CloneLastChild() const;
 
-
         void AppendChild(std::unique_ptr<Node> node);
 
         std::unique_ptr<Node> RemoveLastChild();
@@ -99,6 +99,8 @@ namespace sparrow_math::internal::parsing_utils {
         BranchNode* GetNearestGroupingAncestorOrSelf();
 
         BranchNode* GetAncestorWhereToInsertOperator(const Operator& opToInsert, bool useLeftToRightPriority);
+
+        std::tuple<Node*, Node*> TryToDisassemblePower() const;
 
         std::unique_ptr<Node> SimplifyNode() const override;
 

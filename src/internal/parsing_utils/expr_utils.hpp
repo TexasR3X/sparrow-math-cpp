@@ -14,11 +14,27 @@ namespace sparrow_math::internal::parsing_utils {
 
         virtual ~Node() = default;
 
+        virtual bool operator==(const Node& other) const;
+        bool operator!=(const Node& other) const;
+
+        std::unique_ptr<Node> operator+(const Node& other) const;
+        std::unique_ptr<Node> operator+(double num) const;
+
+        std::unique_ptr<Node> operator*(const Node& other) const;
+        std::unique_ptr<Node> operator*(double num) const;
+
+        std::unique_ptr<Node> operator^(const Node& other) const;
+        std::unique_ptr<Node> operator^(double num) const;
+
+        virtual std::unique_ptr<Node> Clone() const = 0;
+
         template<typename T>
         requires std::derived_from<T, Node>
-        T* CastAsType() {
+        T* CastAsType() const noexcept {
             return dynamic_cast<T*>(this);
         }
+
+        virtual std::unique_ptr<Node> SimplifyNode() const = 0;
 
         virtual std::string DebugToString() = 0;
     };
@@ -29,6 +45,12 @@ namespace sparrow_math::internal::parsing_utils {
 
         NumNode(double num) : Num(num) {}
 
+        bool operator==(const Node& other) const override;
+
+        std::unique_ptr<Node> Clone() const override;
+
+        std::unique_ptr<Node> SimplifyNode() const override;
+
         std::string DebugToString() override;
     };
 
@@ -37,6 +59,12 @@ namespace sparrow_math::internal::parsing_utils {
         std::string Name;
 
         SymbolNode(std::string_view name) : Name(name) {}
+
+        bool operator==(const Node& other) const override;
+
+        std::unique_ptr<Node> Clone() const override;
+
+        std::unique_ptr<Node> SimplifyNode() const override;
 
         std::string DebugToString() override;
     };
@@ -47,11 +75,18 @@ namespace sparrow_math::internal::parsing_utils {
 
         BranchNode(Operator op) : Op(op) {}
 
-        virtual ~BranchNode() = default;
+        bool operator==(const Node& other) const override;
+
+        std::unique_ptr<Node> Clone() const override;
 
         Node* GetChildAt(size_t index) const;
 
+        std::unique_ptr<Node> CloneChildAt(size_t index) const;
+
         Node* GetLastChild() const;
+
+        std::unique_ptr<Node> CloneLastChild() const;
+
 
         void AppendChild(std::unique_ptr<Node> node);
 
@@ -64,6 +99,8 @@ namespace sparrow_math::internal::parsing_utils {
         BranchNode* GetNearestGroupingAncestorOrSelf();
 
         BranchNode* GetAncestorWhereToInsertOperator(const Operator& opToInsert, bool useLeftToRightPriority);
+
+        std::unique_ptr<Node> SimplifyNode() const override;
 
         std::string DebugToString() override;
     protected:

@@ -1,6 +1,9 @@
 #include <format>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 #include "token_utils.hpp"
 #include "expr_utils.hpp"
 
@@ -29,9 +32,127 @@ namespace sparrow_math::internal::parsing_utils {
         focus = newNodeRawPtr;
     }
 
+    std::unique_ptr<Node> TryToMergeNodesAsProduct(std::unique_ptr<Node> node1, std::unique_ptr<Node> node2) {
+        // Attempt to cast `node1` and `node2` as one of the following types
+        auto node1AsNum = node1->CastAsType<NumNode>();
+        auto node2AsNum = node2->CastAsType<NumNode>();
+
+        auto node1AsSymbol = node1->CastAsType<SymbolNode>();
+        auto node2AsSymbol = node2->CastAsType<SymbolNode>();
+
+        auto node1AsBranch = node1->CastAsType<BranchNode>();
+        auto node2AsBranch = node2->CastAsType<BranchNode>();
+
+        auto TryToMergeSymbolAndPower = [](SymbolNode* symbolNode, BranchNode* powerNode) -> std::unique_ptr<Node> {
+            if (symbolNode && powerNode && powerNode->Op == Operator::OperatorType::Power) {
+                auto baseNode = powerNode->GetChildAt(0);
+                auto expNode = powerNode->GetLastChild();
+
+                if (baseNode && expNode && baseNode == symbolNode) {
+                    return *symbolNode ^ *(*expNode + 1.0);
+                }
+            }
+
+            return nullptr;
+        };
+
+        if (node1AsNum && node2AsNum) {
+            // Get the product of the two numbers
+            auto num = node1AsNum->Num * node2AsNum->Num;
+
+            // Return the merged node
+            return std::make_unique<NumNode>(num);
+        }
+        else if (node1AsSymbol && node2AsSymbol && node1AsSymbol->Name == node2AsSymbol->Name) {
+            return *node1AsSymbol ^ 2.0;
+        }
+        else if (auto mergedNode = TryToMergeSymbolAndPower(node1AsSymbol, node2AsBranch)) {
+            return std::move(mergedNode);
+        }
+        else if (auto mergedNode = TryToMergeSymbolAndPower(node2AsSymbol, node1AsBranch)) {
+            return std::move(mergedNode);
+        }
+        else if (node1AsBranch && node2AsBranch && node1AsBranch->Op == Operator::OperatorType::Power && node2AsBranch->Op == Operator::OperatorType::Power) {
+            auto baseOfNode1AsSymbol = node1AsBranch->GetChildAt(0)->CastAsType<SymbolNode>();
+            auto baseOfNode2AsSymbol = node2AsBranch->GetChildAt(0)->CastAsType<SymbolNode>();
+            auto expOfNode1 = node1AsBranch->GetLastChild();
+            auto expOfNode2 = node2AsBranch->GetLastChild();
+
+            if (baseOfNode1AsSymbol && baseOfNode2AsSymbol && expOfNode1 && expOfNode2 && baseOfNode1AsSymbol->Name == baseOfNode2AsSymbol->Name) {
+                return *baseOfNode1AsSymbol ^ *(*expOfNode1 + *expOfNode2);
+            }
+        }
+
+        return nullptr;
+    }
+
+
+
+    // ========== Node ========== //
+
+    bool Node::operator!=(const Node& other) const {
+        return !(*this == other);
+    }
+
+    std::unique_ptr<Node> Node::operator+(const Node& other) const {
+        auto sumNode = std::make_unique<BranchNode>(Operator::OperatorType::Sum);
+
+        sumNode->AppendChild(Clone());
+        sumNode->AppendChild(other.Clone());
+
+        return sumNode->SimplifyNode();
+    }
+    std::unique_ptr<Node> Node::operator+(double num) const {
+        auto numNode = std::make_unique<NumNode>(num);
+
+        return *this + *numNode;
+    }
+
+    std::unique_ptr<Node> Node::operator*(const Node& other) const {
+        auto productNode = std::make_unique<BranchNode>(Operator::OperatorType::Product);
+
+        productNode->AppendChild(Clone());
+        productNode->AppendChild(other.Clone());
+
+        return productNode->SimplifyNode();
+    }
+    std::unique_ptr<Node> Node::operator*(double num) const {
+        auto numNode = std::make_unique<NumNode>(num);
+
+        return *this * *numNode;
+    }
+
+    std::unique_ptr<Node> Node::operator^(const Node& other) const {
+        auto powerNode = std::make_unique<BranchNode>(Operator::OperatorType::Power);
+
+        powerNode->AppendChild(Clone());
+        powerNode->AppendChild(other.Clone());
+
+        return powerNode->SimplifyNode();
+    }
+    std::unique_ptr<Node> Node::operator^(double num) const {
+        auto numNode = std::make_unique<NumNode>(num);
+
+        return *this ^ *numNode;
+    }
+
 
 
     // ========== NumNode ========== //
+
+    bool NumNode::operator==(const Node& other) const {
+        auto otherNumNode = CastAsType<NumNode>();
+
+        return otherNumNode && Num == otherNumNode->Num;
+    }
+
+    std::unique_ptr<Node> NumNode::Clone() const {
+        return std::make_unique<NumNode>(*this);
+    }
+
+    std::unique_ptr<Node> NumNode::SimplifyNode() const {
+        return Clone();
+    }
 
     std::string NumNode::DebugToString() {
         return std::format("Num({})", Num);
@@ -41,6 +162,20 @@ namespace sparrow_math::internal::parsing_utils {
 
     // ========== SymbolNode ========== //
 
+    bool SymbolNode::operator==(const Node& other) const {
+        auto otherSymbolNode = CastAsType<SymbolNode>();
+
+        return otherSymbolNode && Name == otherSymbolNode->Name;
+    }
+
+    std::unique_ptr<Node> SymbolNode::Clone() const {
+        return std::make_unique<SymbolNode>(*this);
+    }
+
+    std::unique_ptr<Node> SymbolNode::SimplifyNode() const {
+        return Clone();
+    }
+
     std::string SymbolNode::DebugToString() {
         return std::format("Symbol({})", Name);
     }
@@ -49,12 +184,52 @@ namespace sparrow_math::internal::parsing_utils {
 
     // ========== BranchNode ========== //
 
+    bool BranchNode::operator==(const Node& other) const {
+        auto otherBranchNode = CastAsType<BranchNode>();
+
+        if (otherBranchNode && _children.size() == otherBranchNode->_children.size()) {
+            for (size_t i = 0; i < _children.size(); ++i) {
+                auto childOfThis = _children.at(i).get();
+                auto childOfOther = otherBranchNode->_children.at(i).get();
+
+                if (childOfThis != childOfOther) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    std::unique_ptr<Node> BranchNode::Clone() const {
+        auto clonedBranchNode = std::make_unique<BranchNode>(Op);
+
+        for (const auto& child : _children) {
+            auto clonedChild = child->Clone();
+
+            clonedBranchNode->AppendChild(std::move(clonedChild));
+        }
+
+        return std::move(clonedBranchNode);
+    }
+
     Node* BranchNode::GetChildAt(size_t index) const {
         return _children.at(index).get();
     }
 
+    std::unique_ptr<Node> BranchNode::CloneChildAt(size_t index) const {
+        return _children.at(index)->Clone();
+    }
+
     Node* BranchNode::GetLastChild() const {
         return _children.back().get();
+    }
+
+    std::unique_ptr<Node> BranchNode::CloneLastChild() const {
+        return _children.back()->Clone();
     }
 
     void BranchNode::AppendChild(std::unique_ptr<Node> node) {
@@ -106,7 +281,9 @@ namespace sparrow_math::internal::parsing_utils {
     }
 
     BranchNode* BranchNode::GetAncestorWhereToInsertOperator(const Operator& opToInsert, bool useLeftToRightPriority) {
-        if (Op.GetOrderOfOperationsRank() > opToInsert.GetOrderOfOperationsRank() || (useLeftToRightPriority && Op.GetOrderOfOperationsRank() == opToInsert.GetOrderOfOperationsRank())) {
+        if (Op.GetOrderOfOperationsRank() > opToInsert.GetOrderOfOperationsRank() || (
+            useLeftToRightPriority && Op.GetOrderOfOperationsRank() == opToInsert.GetOrderOfOperationsRank()
+        )) {
             if (Parent) {
                 return Parent->GetAncestorWhereToInsertOperator(opToInsert, useLeftToRightPriority);
             }
@@ -117,6 +294,65 @@ namespace sparrow_math::internal::parsing_utils {
         else {
             return this;
         }
+    }
+
+    std::unique_ptr<Node> BranchNode::SimplifyNode() const {
+        std::unique_ptr<BranchNode> simplifiedNode;
+
+        if (_children.empty()) {
+            throw std::runtime_error("Unfinished code; Empty `BranchNode`");
+        }
+        else if (Op == Operator::OperatorType::Sum) {
+
+        }
+        else if (Op == Operator::OperatorType::Product) {
+            // Spread out the product children in this product, while simplifying each child
+            std::vector<std::unique_ptr<Node>> spreadOutChildren;
+
+            for (size_t i = 0; i < _children.size(); ++i) {
+                auto node = CloneChildAt(i);
+
+                node = node->SimplifyNode();
+
+                if (auto nodeAsProduct = node->CastAsType<BranchNode>(); nodeAsProduct && nodeAsProduct->Op == Operator::OperatorType::Product) {
+                    while (!nodeAsProduct->_children.empty()) {
+                        spreadOutChildren.push_back(nodeAsProduct->RemoveLastChild());
+                    }
+                }
+                else {
+                    spreadOutChildren.push_back(std::move(node));
+                }
+            }
+
+            // Merge all the children that can be merged
+            auto firstChild = spreadOutChildren.at(0)->Clone();
+            simplifiedNode->AppendChild(std::move(firstChild));
+
+            for (size_t i = 1; i < _children.size(); ++i) {
+                auto node1 = spreadOutChildren.at(i - 1)->Clone();
+                auto node2 = spreadOutChildren.at(i)->Clone();
+
+                node1 = node1->SimplifyNode();
+                node2 = node2->SimplifyNode();
+
+                if (auto mergedNode = TryToMergeNodesAsProduct(std::move(node1), std::move(node2))) {
+                    simplifiedNode->AppendChild(std::move(mergedNode));
+                }
+            }
+        }
+        else if (Op == Operator::OperatorType::Power) {
+            if (_children.size() == 2) {
+                auto baseNode = GetChildAt(0);
+                auto expNode = GetLastChild();
+
+                // TODO: Finish code that handles power nodes
+            }
+            else {
+                throw std::runtime_error("Power can only have two operands");
+            }
+        }
+
+        return nullptr;
     }
 
     std::string BranchNode::DebugToString() {
